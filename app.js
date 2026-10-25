@@ -13,10 +13,16 @@
   // קריאה לשרת. מחזירה את תשובת השרת, או זורקת שגיאת רשת עם הדגל network
   function api(action, data, opts) {
     opts = opts || {};
+    var url;
+    try {
+      url = apiUrl();
+    } catch (err) {
+      return Promise.reject(err);
+    }
     var body = Object.assign({ action: action }, data || {});
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, opts.timeout || 25000) : null;
-    return fetch(apiUrl(), {
+    return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body),
