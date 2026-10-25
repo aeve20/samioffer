@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15213B">
+<meta name="robots" content="noindex, nofollow">
+<title>מסך נוכחות</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { height: 100%; }
+  body { background: var(--navy); color: var(--cream); overflow: hidden; }
+  .screen { height: 100vh; height: 100dvh; display: grid; grid-template-columns: 1fr auto; gap: 4vmin; padding: 4vmin 5vmin; align-items: center; }
+  .side { display: flex; flex-direction: column; gap: 2.4vmin; min-width: 0; }
+  .brand-line { display: flex; align-items: center; gap: 1.6vmin; color: var(--gold); font-size: 2.6vmin; font-weight: 500; }
+  .brand-line img { width: 4.4vmin; height: 4.4vmin; }
+  .ev-name { font-family: var(--display); font-weight: 700; font-size: 6.2vmin; line-height: 1.12; margin: 0; }
+  .mode { align-self: flex-start; font-size: 4.2vmin; font-weight: 600; padding: 1.2vmin 3.2vmin; border-radius: 999px; background: #2B7A6B; color: #fff; }
+  .mode.exit { background: var(--gold); color: var(--navy); }
+  .steps-big { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.6vmin; font-size: 3vmin; color: #D9DEE8; }
+  .steps-big li { display: flex; gap: 1.8vmin; align-items: center; }
+  .steps-big .n { flex: none; width: 5vmin; height: 5vmin; border-radius: 50%; background: var(--navy-2); color: var(--gold); display: grid; place-items: center; font-weight: 600; font-size: 2.6vmin; }
+  .stats { display: flex; gap: 2vmin; flex-wrap: wrap; margin-top: 1vmin; }
+  .stat { background: var(--navy-2); border-radius: 2vmin; padding: 1.6vmin 2.6vmin; min-width: 16vmin; }
+  .stat .v { font-size: 5vmin; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .l { font-size: 2.2vmin; color: #B9C0D0; }
+  .qr-wrap { background: #fff; border-radius: 3vmin; padding: 2vmin; box-shadow: 0 2vmin 6vmin rgba(0, 0, 0, .35); display: flex; flex-direction: column; align-items: center; gap: 1.4vmin; }
+  #qr { width: min(78vh, 54vw); height: min(78vh, 54vw); display: block; image-rendering: pixelated; }
+  .bar { width: 100%; height: 1.2vmin; background: #EBE3D2; border-radius: 1vmin; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 100%; background: var(--gold); transform-origin: right; }
+  .clock { font-size: 2.6vmin; color: var(--navy); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .err-banner { position: fixed; top: 0; left: 0; right: 0; background: var(--bad); color: #fff; text-align: center; padding: 1.2vmin; font-size: 2.6vmin; }
+  .tools { position: fixed; bottom: 1.6vmin; left: 1.6vmin; display: flex; gap: 1vmin; opacity: .35; transition: opacity .2s; }
+  .tools:hover { opacity: 1; }
+  .msg { display: grid; place-items: center; height: 100vh; text-align: center; padding: 6vmin; font-size: 3.4vmin; }
+  .stale #qr { opacity: .15; }
+  @media (orientation: portrait) {
+    .screen { grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; justify-items: center; text-align: center; }
+    .side { align-items: center; order: 2; }
+    .mode { align-self: center; }
+    .steps-big { display: none; }
+    #qr { width: 84vw; height: 84vw; }
+  }
+</style>
+</head>
+<body>
+<div id="msg" class="msg"><div><span class="spinner light"></span><p>טוען את מסך הנוכחות…</p></div></div>
+
+<div class="screen" id="screen" hidden>
+  <div class="side">
+    <div class="brand-line"><img src="icon.svg" alt=""> מערכת נוכחות</div>
+    <h1 class="ev-name" id="evName"></h1>
+    <div class="mode" id="mode">סריקת הגעה</div>
+    <ol class="steps-big">
+      <li><span class="n">1</span> פתח את דף הנוכחות בטלפון</li>
+      <li><span class="n">2</span> לחץ על כפתור הסריקה</li>
+      <li><span class="n">3</span> כוון את המצלמה לקוד</li>
+    </ol>
+    <div class="stats">
+      <div class="stat"><div class="v" id="sArrived">0</div><div class="l">הגיעו</div></div>
+      <div class="stat"><div class="v" id="sReg">0</div><div class="l">רשומים</div></div>
+      <div class="stat" id="exitStat" hidden><div class="v" id="sExited">0</div><div class="l">יצאו</div></div>
+    </div>
+  </div>
+  <div class="qr-wrap">
+    <canvas id="qr" aria-label="קוד נוכחות מתחלף"></canvas>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="clock" id="clock"></div>
+  </div>
+</div>
+
+<div class="err-banner" id="errBanner" hidden>אין חיבור לשרת — הקוד ממשיך להתחלף, מנסה להתחבר מחדש</div>
+<div class="tools"><button class="btn sm ghost light" id="fsBtn" type="button">מסך מלא</button></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var e = NV.param('e');
+  var d = NV.param('d');
+  var tokens = [];
+  var offset = 0;
+  var windowMs = 15000;
+  var current = '';
+  var scanBase = NV.baseUrl() + 'scan.html?e=' + encodeURIComponent(e) + '#q=';
+  var failures = 0;
+
+  function fail(text) {
+    $('msg').innerHTML = '<div><p style="font-size:4.4vmin;margin:0 0 1vmin"><b>' + NV.esc(text) + '</b></p><p style="color:#B9C0D0">בדוק את קישור מסך התצוגה במסך הניהול</p></div>';
+    $('msg').hidden = false;
+    $('screen').hidden = true;
+  }
+
+  function load() {
+    return NV.api('display', { e: e, d: d }, { timeout: 15000 }).then(function (r) {
+      if (!r.ok) {
+        if (r.code === 'LINK') { fail(r.error); return; }
+        throw new Error(r.error);
+      }
+      failures = 0;
+      $('errBanner').hidden = true;
+      offset = r.serverTime - Date.now();
+      windowMs = r.windowSec * 1000;
+      tokens = r.tokens;
+      $('evName').textContent = r.event.name;
+      document.title = 'מסך נוכחות — ' + r.event.name;
+      var m = $('mode');
+      m.textContent = r.event.exitOpen ? 'סריקת יציאה פתוחה' : 'סריקת הגעה';
+      m.classList.toggle('exit', r.event.exitOpen);
+      $('sArrived').textContent = r.counts.arrived;
+      $('sReg').textContent = r.counts.registered;
+      $('sExited').textContent = r.counts.exited;
+      $('exitStat').hidden = !r.event.exitOpen;
+      $('msg').hidden = true;
+      $('screen').hidden = false;
+      paint(true);
+    }).catch(function () {
+      failures++;
+      if (!tokens.length) { fail('אין חיבור לשרת'); setTimeout(load, 5000); return; }
+      $('errBanner').hidden = failures < 2;
+    });
+  }
+
+  function now() { return Date.now() + offset; }
+
+  function paint(force) {
+    if (!tokens.length) return;
+    var t = now();
+    var w = Math.floor(t / windowMs);
+    var tok = null;
+    for (var i = 0; i < tokens.length; i++) if (tokens[i].w === w) tok = tokens[i];
+    var screen = $('screen');
+    if (!tok) { screen.classList.add('stale'); return; }
+    screen.classList.remove('stale');
+    if (force || tok.token !== current) {
+      current = tok.token;
+      var c = $('qr');
+      NV.drawQr(c, scanBase + encodeURIComponent(tok.token), { size: c.clientWidth, level: 'M', quiet: 2 });
+    }
+    var frac = (t % windowMs) / windowMs;
+    $('barFill').style.transform = 'scaleX(' + (1 - frac).toFixed(3) + ')';
+    $('clock').textContent = new Date(t).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  if (!e || !d) { fail('קישור מסך התצוגה חסר או שגוי'); return; }
+
+  setInterval(function () { paint(false); }, 250);
+  setInterval(load, 20000);
+  window.addEventListener('resize', function () { paint(true); });
+  load();
+
+  var lock = null;
+  function keepAwake() {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {});
+    }
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { keepAwake(); load(); } });
+  keepAwake();
+
+  $('fsBtn').addEventListener('click', function () {
+    var el = document.documentElement;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (el.requestFullscreen) el.requestFullscreen().catch(function () {});
+    setTimeout(function () { paint(true); }, 400);
+  });
+})();
+</script>
+</body>
+</html>

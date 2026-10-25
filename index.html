@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#15213B">
+<meta name="robots" content="noindex, nofollow">
+<title>נוכחות</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><img class="brand-mark" src="icon.svg" alt=""><span class="brand">נוכחות</span></header>
+<main class="wrap">
+  <section class="card">
+    <h2>מערכת נוכחות חכמה</h2>
+    <p class="muted">כדי להשתמש במערכת יש להירשם דרך קישור ההרשמה שקיבלת מאחראי האירוע. אחרי ההרשמה, דף הנוכחות שלך ייפתח מכאן אוטומטית.</p>
+  </section>
+</main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  if (NV.lastEvent()) location.replace('scan.html?e=' + encodeURIComponent(NV.lastEvent()));
+</script>
+</body>
+</html>

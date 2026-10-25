@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15213B">
+<meta name="robots" content="noindex, nofollow">
+<title>ניהול נוכחות</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .tabs { display: flex; gap: 4px; }
+  .tab { background: transparent; color: #B9C0D0; border: none; font: inherit; font-size: 15px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+  .tab.active { background: var(--navy-2); color: var(--cream); }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
+  .page-head h1 { margin: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .ev-card { cursor: pointer; transition: transform .1s, box-shadow .15s; margin: 0; }
+  .ev-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(21, 33, 59, .12); }
+  .ev-card h3 { font-family: var(--display); font-size: 21px; margin: 4px 0 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .progress { height: 8px; background: #EBE3D2; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+  .progress > i { display: block; height: 100%; background: var(--gold); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .tile .v { font-size: 34px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 18px; color: var(--muted); font-weight: 400; }
+  .tile .l { color: var(--muted); font-size: 14px; }
+  .tile.accent { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .tile.accent .l { color: #B9C0D0; }
+  .tile.warn .v { color: var(--warn); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .two > * { min-width: 0; }
+  .link-box { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
+  .link-box code { flex: 1; min-width: 0; direction: ltr; text-align: left; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+  .reg-qr { display: flex; gap: 16px; align-items: center; margin-top: 12px; }
+  .reg-qr canvas { width: 132px; height: 132px; border: 1px solid var(--line); border-radius: 10px; flex: none; }
+  .exit-box { border-radius: 14px; padding: 16px; margin-top: 14px; background: #EBE3D2; }
+  .exit-box.open { background: var(--gold); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: right; font-weight: 500; color: var(--muted); font-size: 13px; padding: 8px 10px; border-bottom: 1.5px solid var(--line); white-space: nowrap; }
+  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .table-scroll { overflow-x: auto; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .filter { border: 1.5px solid var(--line); background: #fff; font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 999px; cursor: pointer; color: var(--ink); }
+  .filter.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .search { max-width: 220px; padding: 8px 12px !important; font-size: 15px !important; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .back { background: none; border: none; color: var(--muted); font: inherit; cursor: pointer; padding: 0; margin-bottom: 6px; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .rej { font-size: 14px; display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .rej:last-child { border-bottom: none; }
+  .rej .t { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @media (max-width: 760px) {
+    .two, .form-grid { grid-template-columns: minmax(0, 1fr); }
+    .tabs .tab { padding: 6px 8px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <img class="brand-mark" src="icon.svg" alt="">
+  <span class="brand">ניהול נוכחות</span>
+  <span class="spacer"></span>
+  <nav class="tabs" id="tabs" hidden>
+    <button class="tab active" data-view="events" type="button">אירועים</button>
+    <button class="tab" data-view="whitelist" type="button">רשימת מאושרים</button>
+    <button class="tab" id="logout" type="button">התנתקות</button>
+  </nav>
+</header>
+
+<main class="wrap wide">
+
+  <!-- התחברות -->
+  <form id="loginView" class="card" style="max-width:420px;margin:40px auto" novalidate>
+    <p class="eyebrow">כניסת מנהל</p>
+    <h2>ניהול מערכת הנוכחות</h2>
+    <label for="password">סיסמת ניהול</label>
+    <input id="password" class="ltr" type="password" autocomplete="current-password">
+    <div id="loginNotice"></div>
+    <button class="btn block xl" id="loginBtn" type="submit" style="margin-top:16px">כניסה</button>
+  </form>
+
+  <!-- רשימת אירועים -->
+  <section id="eventsView" hidden>
+    <div class="page-head">
+      <div><p class="eyebrow">ניהול</p><h1>אירועים</h1></div>
+      <button class="btn gold" id="newEventBtn" type="button">+ אירוע חדש</button>
+    </div>
+    <div id="wlWarning"></div>
+    <div class="grid" id="eventsGrid"></div>
+  </section>
+
+  <!-- טופס אירוע -->
+  <form id="formView" class="card" style="max-width:760px;margin:0 auto" novalidate hidden>
+    <button class="back" type="button" data-back>→ חזרה</button>
+    <h2 id="formTitle">אירוע חדש</h2>
+    <div class="form-grid">
+      <div class="full">
+        <label for="fName">שם האירוע</label>
+        <input id="fName" type="text" maxlength="80" placeholder="לדוגמה: אבטחת משחק גמר הגביע">
+      </div>
+      <div><label for="fDate">תאריך</label><input id="fDate" type="date"></div>
+      <div class="form-grid" style="gap:0 10px">
+        <div><label for="fStart">שעת התחלה</label><input id="fStart" type="time" value="07:00"></div>
+        <div><label for="fEnd">שעת סיום</label><input id="fEnd" type="time" value="17:00"></div>
+      </div>
+      <div class="full">
+        <label for="fLoc">מיקום מרכז המתחם</label>
+        <input id="fLoc" class="ltr" type="text" placeholder="32.08530, 34.78180">
+        <div class="field-hint">קו רוחב וקו אורך, מופרדים בפסיק. אפשר להעתיק ממפות גוגל בלחיצה ימנית על הנקודה, או ללחוץ על "המיקום שלי" כשאתה במתחם.</div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn ghost sm" id="myLocBtn" type="button">המיקום שלי</button>
+          <a class="btn ghost sm" id="mapLink" href="#" target="_blank" rel="noopener">בדיקה במפה</a>
+        </div>
+      </div>
+      <div>
+        <label for="fRadius">רדיוס המתחם במטרים</label>
+        <input id="fRadius" type="number" min="30" max="5000" step="10" value="300">
+        <div class="field-hint">סריקה מחוץ לרדיוס תסומן כחריגה</div>
+      </div>
+      <div>
+        <label for="fQuota">מכסת שוטרים</label>
+        <input id="fQuota" type="number" min="1" max="5000" value="300">
+        <div class="field-hint">כשהמכסה מתמלאת ההרשמה נסגרת אוטומטית</div>
+      </div>
+    </div>
+    <div id="formNotice"></div>
+    <div class="btn-row"><button class="btn xl" id="saveBtn" type="submit">שמירה</button></div>
+  </form>
+
+  <!-- פרטי אירוע -->
+  <section id="detailView" hidden>
+    <button class="back" type="button" data-back>→ כל האירועים</button>
+    <div class="page-head">
+      <div>
+        <h1 id="dName"></h1>
+        <div class="event-meta"><span id="dDate"></span><span id="dTime"></span><span class="live"><span class="dot"></span> מתעדכן אוטומטית</span></div>
+        <div class="chips" id="dChips"></div>
+      </div>
+      <div class="btn-row" style="margin:0">
+        <button class="btn ghost" id="editBtn" type="button">עריכת אירוע</button>
+        <button class="btn ghost" id="exportBtn" type="button">ייצוא דוח</button>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile accent"><div class="v" id="tReg"></div><div class="l">רשומים מתוך המכסה</div><div class="progress"><i id="tRegBar"></i></div></div>
+      <div class="tile"><div class="v" id="tArrived">0</div><div class="l">הגיעו</div></div>
+      <div class="tile"><div class="v" id="tOnSite">0</div><div class="l">נמצאים כעת</div></div>
+      <div class="tile"><div class="v" id="tExited">0</div><div class="l">יצאו</div></div>
+      <div class="tile warn"><div class="v" id="tFlagged">0</div><div class="l">שוטרים עם חריגה</div></div>
+      <div class="tile"><div class="v" id="tRejected">0</div><div class="l">סריקות שנדחו</div></div>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <h3>קישור הרשמה לשוטרים</h3>
+        <p class="muted small" style="margin:0">שלח את הקישור לשוטרים. רק מספרים אישיים מרשימת המאושרים יוכלו להירשם.</p>
+        <div class="link-box"><code id="regLink"></code><button class="btn sm ghost" id="copyReg" type="button">העתקה</button></div>
+        <div class="reg-qr">
+          <canvas id="regQr"></canvas>
+          <div>
+            <p class="small muted" style="margin:0 0 8px">אפשר גם להקרין את הקוד הזה לסריקה בתדריך.</p>
+            <div class="btn-row" style="margin:0">
+              <button class="btn sm" id="toggleReg" type="button"></button>
+              <button class="btn sm ghost" id="rotateReg" type="button">החלפת קישור</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>מסך הקוד המתחלף</h3>
+        <p class="muted small" style="margin:0">פתח את הקישור בטאבלט או במחשב שמחובר למסך בנקודת הריכוז. הקוד מתחלף כל 15 שניות.</p>
+        <div class="link-box"><code id="dispLink"></code><button class="btn sm ghost" id="copyDisp" type="button">העתקה</button></div>
+        <div class="btn-row"><a class="btn sm" id="openDisp" href="#" target="_blank" rel="noopener">פתיחת מסך התצוגה</a></div>
+        <div class="exit-box" id="exitBox">
+          <b id="exitTitle"></b>
+          <p class="small" id="exitText" style="margin:4px 0 10px"></p>
+          <button class="btn" id="exitBtn" type="button"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="page-head" style="margin:0 0 10px">
+        <h3 style="margin:0">רשימת הנרשמים</h3>
+        <input class="search ltr" id="search" type="text" inputmode="numeric" placeholder="חיפוש מספר אישי">
+      </div>
+      <div class="filters" id="filters">
+        <button class="filter active" data-f="all" type="button">הכל</button>
+        <button class="filter" data-f="waiting" type="button">טרם הגיעו</button>
+        <button class="filter" data-f="onsite" type="button">נמצאים</button>
+        <button class="filter" data-f="out" type="button">יצאו</button>
+        <button class="filter" data-f="flags" type="button">חריגות</button>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>מספר אישי</th><th>טלפון</th><th>דואר</th><th>הרשמה</th><th>הגעה</th><th>יציאה</th><th>חריגות</th><th></th></tr></thead>
+          <tbody id="people"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>סריקות שנדחו לאחרונה</h3>
+      <div id="rejections"></div>
+    </div>
+  </section>
+
+  <!-- רשימת מאושרים -->
+  <section id="whitelistView" hidden>
+    <div class="page-head"><div><p class="eyebrow">אבטחה</p><h1>רשימת מספרים אישיים מאושרים</h1></div></div>
+    <div class="card" style="max-width:760px">
+      <p>רק שוטרים שהמספר האישי שלהם מופיע ברשימה יוכלו להירשם לאירועים. הרשימה כוללת מספרים בלבד, בלי שמות.</p>
+      <div id="wlStatus" class="notice info"></div>
+      <label for="wlText">הדבק מספרים אישיים</label>
+      <textarea id="wlText" class="ltr" placeholder="1234567&#10;2345678&#10;3456789"></textarea>
+      <div class="field-hint">אפשר להדביק עמודה מתוך גיליון, או מספרים מופרדים ברווח או בפסיק.</div>
+      <div id="wlNotice"></div>
+      <div class="btn-row">
+        <button class="btn" id="wlReplace" type="button">החלפת הרשימה</button>
+        <button class="btn ghost" id="wlAdd" type="button">הוספה לרשימה</button>
+        <button class="btn ghost" id="wlClear" type="button" style="margin-inline-start:auto;color:var(--bad)">ניקוי הרשימה</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var views = ['loginView', 'eventsView', 'formView', 'detailView', 'whitelistView'];
+  var session = '';
+  try { session = sessionStorage.getItem('nv_admin') || ''; } catch (e) { }
+  var current = null;
+  var detail = null;
+  var filter = 'all';
+  var pollTimer = null;
+  var editingId = null;
+  var lastReturn = 'eventsView';
+
+  function view(name) {
+    views.forEach(function (v) { $(v).hidden = v !== name; });
+    $('tabs').hidden = name === 'loginView';
+    document.querySelectorAll('.tab[data-view]').forEach(function (t) {
+      t.classList.toggle('active', (name === 'whitelistView') === (t.dataset.view === 'whitelist'));
+    });
+    clearTimeout(pollTimer);
+    window.scrollTo(0, 0);
+  }
+
+  function call(action, data) {
+    return NV.api(action, Object.assign({ session: session }, data || {})).then(function (r) {
+      if (!r.ok && r.code === 'AUTH') {
+        logout();
+        throw new Error(r.error);
+      }
+      return r;
+    });
+  }
+
+  function logout() {
+    session = '';
+    try { sessionStorage.removeItem('nv_admin'); } catch (e) { }
+    view('loginView');
+  }
+
+  function notice(id, kind, text) {
+    $(id).innerHTML = text ? '<div class="notice ' + kind + '">' + NV.esc(text) + '</div>' : '';
+  }
+
+  // ===== התחברות =====
+  $('loginView').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var btn = $('loginBtn');
+    btn.disabled = true;
+    NV.api('adminLogin', { password: $('password').value }).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) { notice('loginNotice', 'bad', r.error); return; }
+      session = r.session;
+      try { sessionStorage.setItem('nv_admin', session); } catch (e) { }
+      $('password').value = '';
+      notice('loginNotice');
+      loadEvents();
+    }).catch(function (err) { btn.disabled = false; notice('loginNotice', 'bad', err.message); });
+  });
+  $('logout').addEventListener('click', logout);
+
+  document.querySelectorAll('.tab[data-view]').forEach(function (t) {
+    t.addEventListener('click', function () { t.dataset.view === 'whitelist' ? loadWhitelist() : loadEvents(); });
+  });
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (lastReturn === 'detailView' && current) openEvent(current.id); else loadEvents();
+    });
+  });
+
+  // ===== רשימת אירועים =====
+  function regStateChip(ev, c) {
+    if (c && c.registered >= ev.quota) return '<span class="chip warn"><span class="dot"></span>מכסה מלאה</span>';
+    return ev.regOpen ? '<span class="chip ok"><span class="dot"></span>הרשמה פתוחה</span>' : '<span class="chip"><span class="dot"></span>הרשמה סגורה</span>';
+  }
+
+  function loadEvents() {
+    view('eventsView');
+    $('eventsGrid').innerHTML = '<div class="card center" style="grid-column:1/-1"><span class="spinner"></span></div>';
+    call('listEvents').then(function (r) {
+      if (!r.ok) { $('eventsGrid').innerHTML = '<div class="notice bad">' + NV.esc(r.error) + '</div>'; return; }
+      $('wlWarning').innerHTML = r.whitelistCount ? '' :
+        '<div class="notice warn"><b>רשימת המאושרים ריקה.</b> כרגע כל מי שמקבל את הקישור יכול להירשם. מומלץ להעלות את רשימת המספרים האישיים בלשונית "רשימת מאושרים".</div>';
+      if (!r.events.length) {
+        $('eventsGrid').innerHTML = '<div class="card empty" style="grid-column:1/-1">עדיין אין אירועים. לחץ על "אירוע חדש" כדי להתחיל.</div>';
+        return;
+      }
+      $('eventsGrid').innerHTML = r.events.map(function (ev) {
+        var c = ev.counts;
+        var pct = Math.min(100, Math.round(100 * c.registered / Math.max(1, ev.quota)));
+        return '<article class="card ev-card" data-id="' + NV.esc(ev.id) + '">' +
+          '<p class="eyebrow">' + NV.esc(NV.fmtDate(ev.date)) + ' · ' + NV.esc(NV.timeRange(ev.start, ev.end)) + '</p>' +
+          '<h3>' + NV.esc(ev.name) + '</h3>' +
+          '<div class="muted small">' + c.registered + ' רשומים מתוך ' + ev.quota + ' · ' + c.arrived + ' הגיעו · ' + c.exited + ' יצאו</div>' +
+          '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
+          '<div class="chips">' + regStateChip(ev, c) + (ev.exitOpen ? '<span class="chip gold">יציאה פתוחה</span>' : '') +
+          (c.flagged ? '<span class="chip warn">' + c.flagged + ' חריגות</span>' : '') + '</div></article>';
+      }).join('');
+      document.querySelectorAll('.ev-card').forEach(function (el) {
+        el.addEventListener('click', function () { openEvent(el.dataset.id); });
+      });
+    }).catch(function (err) { $('eventsGrid').innerHTML = '<div class="notice bad">' + NV.esc(err.message) + '</div>'; });
+  }
+
+  // ===== טופס אירוע =====
+  $('newEventBtn').addEventListener('click', function () { openForm(null); });
+
+  function openForm(ev) {
+    editingId = ev ? ev.id : null;
+    lastReturn = ev ? 'detailView' : 'eventsView';
+    view('formView');
+    notice('formNotice');
+    $('formTitle').textContent = ev ? 'עריכת אירוע' : 'אירוע חדש';
+    var today = new Date();
+    var ymd = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    $('fName').value = ev ? ev.name : '';
+    $('fDate').value = ev ? ev.date : ymd;
+    $('fStart').value = ev ? ev.start : '07:00';
+    $('fEnd').value = ev ? ev.end : '17:00';
+    $('fLoc').value = ev ? ev.lat.toFixed(6) + ', ' + ev.lng.toFixed(6) : '';
+    $('fRadius').value = ev ? ev.radius : 300;
+    $('fQuota').value = ev ? ev.quota : 300;
+    updateMapLink();
+    $('fName').focus();
+  }
+
+  function parseLoc() {
+    var m = $('fLoc').value.match(/(-?\d{1,3}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)/);
+    if (!m) return null;
+    var lat = parseFloat(m[1]);
+    var lng = parseFloat(m[2]);
+    if (!(lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)) return null;
+    return { lat: lat, lng: lng };
+  }
+  function updateMapLink() {
+    var l = parseLoc();
+    var a = $('mapLink');
+    a.href = l ? 'https://www.google.com/maps/search/?api=1&query=' + l.lat + ',' + l.lng : '#';
+    a.style.opacity = l ? '1' : '.4';
+  }
+  $('fLoc').addEventListener('input', updateMapLink);
+  $('myLocBtn').addEventListener('click', function () {
+    var btn = this;
+    if (!navigator.geolocation) { NV.toast('המכשיר אינו תומך באיתור מיקום'); return; }
+    btn.disabled = true;
+    btn.textContent = 'מאתר…';
+    navigator.geolocation.getCurrentPosition(function (p) {
+      btn.disabled = false;
+      btn.textContent = 'המיקום שלי';
+      $('fLoc').value = p.coords.latitude.toFixed(6) + ', ' + p.coords.longitude.toFixed(6);
+      updateMapLink();
+      NV.toast('המיקום הוזן. דיוק משוער: ' + Math.round(p.coords.accuracy) + ' מטר');
+    }, function () {
+      btn.disabled = false;
+      btn.textContent = 'המיקום שלי';
+      NV.toast('לא ניתן לאתר מיקום. אפשר להעתיק נקודה ממפות גוגל');
+    }, { enableHighAccuracy: true, timeout: 15000 });
+  });
+
+  $('formView').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var loc = parseLoc();
+    if (!$('fName').value.trim()) { notice('formNotice', 'bad', 'יש להזין שם לאירוע'); return; }
+    if (!loc) { notice('formNotice', 'bad', 'יש להזין את מיקום מרכז המתחם בפורמט: קו רוחב, קו אורך'); return; }
+    var data = {
+      name: $('fName').value.trim(), date: $('fDate').value, start: $('fStart').value, end: $('fEnd').value,
+      lat: loc.lat, lng: loc.lng, radius: +$('fRadius').value, quota: +$('fQuota').value
+    };
+    if (editingId) data.id = editingId;
+    var btn = $('saveBtn');
+    btn.disabled = true;
+    call(editingId ? 'updateEvent' : 'createEvent', data).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) { notice('formNotice', 'bad', r.error); return; }
+      NV.toast(editingId ? 'האירוע עודכן' : 'האירוע נוצר');
+      openEvent(r.event.id);
+    }).catch(function (err) { btn.disabled = false; notice('formNotice', 'bad', err.message); });
+  });
+
+  // ===== פרטי אירוע =====
+  function regUrl(ev) { return NV.baseUrl() + 'register.html?e=' + encodeURIComponent(ev.id) + '&k=' + encodeURIComponent(ev.regKey); }
+  function dispUrl(ev) { return NV.baseUrl() + 'display.html?e=' + encodeURIComponent(ev.id) + '&d=' + encodeURIComponent(ev.dispKey); }
+
+  function openEvent(id) {
+    view('detailView');
+    current = { id: id };
+    $('dName').textContent = 'טוען…';
+    $('people').innerHTML = '';
+    refreshDetail(true);
+  }
+
+  function refreshDetail(first) {
+    clearTimeout(pollTimer);
+    if (!current) return;
+    call('eventDetail', { id: current.id }).then(function (r) {
+      if (!r.ok) { NV.toast(r.error); return; }
+      if ($('detailView').hidden) return;
+      detail = r;
+      current = r.event;
+      renderDetail(first);
+      pollTimer = setTimeout(function () { refreshDetail(false); }, 10000);
+    }).catch(function (err) {
+      if (!$('detailView').hidden) {
+        NV.toast(err.message);
+        pollTimer = setTimeout(function () { refreshDetail(false); }, 15000);
+      }
+    });
+  }
+
+  var drawnRegUrl = '';
+  function renderDetail() {
+    var ev = detail.event;
+    var c = detail.counts;
+    $('dName').textContent = ev.name;
+    $('dDate').textContent = NV.fmtDate(ev.date);
+    $('dTime').textContent = 'שעות ' + NV.timeRange(ev.start, ev.end);
+    $('dChips').innerHTML = regStateChip(ev, c) + (ev.exitOpen ? '<span class="chip gold">יציאה פתוחה מ-' + NV.esc(NV.fmtTime(ev.exitAt)) + '</span>' : '') +
+      '<span class="chip">רדיוס ' + ev.radius + ' מטר</span>';
+    $('tReg').innerHTML = c.registered + ' <small>/ ' + ev.quota + '</small>';
+    $('tRegBar').style.width = Math.min(100, Math.round(100 * c.registered / Math.max(1, ev.quota))) + '%';
+    $('tArrived').textContent = c.arrived;
+    $('tOnSite').textContent = c.onSite;
+    $('tExited').textContent = c.exited;
+    $('tFlagged').textContent = c.flagged;
+    $('tRejected').textContent = c.rejected;
+
+    var ru = regUrl(ev);
+    $('regLink').textContent = ru;
+    if (ru !== drawnRegUrl) {
+      drawnRegUrl = ru;
+      NV.drawQr($('regQr'), ru, { size: 132, quiet: 2 });
+    }
+    $('toggleReg').textContent = ev.regOpen ? 'סגירת ההרשמה' : 'פתיחת ההרשמה';
+    $('toggleReg').className = 'btn sm' + (ev.regOpen ? ' ghost' : ' ok');
+    $('dispLink').textContent = dispUrl(ev);
+    $('openDisp').href = dispUrl(ev);
+
+    var box = $('exitBox');
+    box.classList.toggle('open', ev.exitOpen);
+    if (ev.exitOpen) {
+      $('exitTitle').textContent = 'הסיום הוכרז — סריקת היציאה פתוחה';
+      $('exitText').textContent = 'השוטרים יכולים לסרוק יציאה מאז ' + NV.fmtTime(ev.exitAt) + '. טרם סרקו יציאה: ' + c.onSite + ' שוטרים.';
+      $('exitBtn').textContent = 'ביטול ההכרזה';
+      $('exitBtn').className = 'btn ghost';
+    } else {
+      $('exitTitle').textContent = 'סריקת היציאה סגורה';
+      $('exitText').textContent = 'שוטר יוכל לסרוק יציאה רק אחרי הכרזת הסיום. כך אי אפשר "לצאת" לפני השחרור.';
+      $('exitBtn').textContent = 'הכרזה על סיום האירוע';
+      $('exitBtn').className = 'btn';
+    }
+    renderPeople();
+    $('rejections').innerHTML = detail.rejections.length ? detail.rejections.map(function (x) {
+      return '<div class="rej"><span class="t">' + NV.esc(NV.fmtDateTime(x.at)) + '</span><span class="ltr">' + NV.esc(x.pn) + '</span><span>' + NV.esc(x.reason) + '</span></div>';
+    }).join('') : '<div class="muted small">אין סריקות שנדחו.</div>';
+  }
+
+  function renderPeople() {
+    var q = $('search').value.replace(/\D/g, '');
+    var list = detail.people.filter(function (p) {
+      if (q && p.pn.indexOf(q) < 0) return false;
+      if (filter === 'waiting') return !p.inAt;
+      if (filter === 'onsite') return p.inAt && !p.outAt;
+      if (filter === 'out') return !!p.outAt;
+      if (filter === 'flags') return p.flags.length > 0;
+      return true;
+    });
+    if (!list.length) {
+      $('people').innerHTML = '<tr><td colspan="8" class="empty">' + (detail.people.length ? 'אין נרשמים שמתאימים לסינון' : 'עדיין אין נרשמים. שלח לשוטרים את קישור ההרשמה.') + '</td></tr>';
+      return;
+    }
+    $('people').innerHTML = list.map(function (p) {
+      var status = p.outAt ? '<span class="chip">יצא</span>' : p.inAt ? '<span class="chip ok">נמצא</span>' : '';
+      return '<tr>' +
+        '<td class="num ltr"><b>' + NV.esc(p.pn) + '</b></td>' +
+        '<td class="num ltr">' + NV.esc(p.phone) + '</td>' +
+        '<td class="ltr small">' + NV.esc(p.email) + '</td>' +
+        '<td class="num small muted">' + NV.esc(NV.fmtDateTime(p.regAt)) + '</td>' +
+        '<td class="num">' + (p.inAt ? NV.esc(NV.fmtTime(p.inAt)) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num">' + (p.outAt ? NV.esc(NV.fmtTime(p.outAt)) + ' ' + status : (p.inAt ? status : '<span class="muted">—</span>')) + '</td>' +
+        '<td>' + p.flags.map(function (f) { return '<span class="chip warn" style="margin:2px">' + NV.esc(f) + '</span>'; }).join('') + '</td>' +
+        '<td><button class="btn sm ghost" data-cancel="' + NV.esc(p.pn) + '" type="button">ביטול</button></td>' +
+        '</tr>';
+    }).join('');
+    document.querySelectorAll('[data-cancel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var pn = b.dataset.cancel;
+        if (!confirm('לבטל את ההרשמה של מספר אישי ' + pn + '? המקום יתפנה לנרשם אחר.')) return;
+        call('cancelRegistrant', { id: current.id, pn: pn }).then(function (r) {
+          NV.toast(r.ok ? 'ההרשמה בוטלה' : r.error);
+          refreshDetail(false);
+        });
+      });
+    });
+  }
+
+  $('search').addEventListener('input', function () { if (detail) renderPeople(); });
+  document.querySelectorAll('.filter').forEach(function (b) {
+    b.addEventListener('click', function () {
+      filter = b.dataset.f;
+      document.querySelectorAll('.filter').forEach(function (x) { x.classList.toggle('active', x === b); });
+      if (detail) renderPeople();
+    });
+  });
+
+  $('copyReg').addEventListener('click', function () { NV.copy(regUrl(current)); });
+  $('copyDisp').addEventListener('click', function () { NV.copy(dispUrl(current)); });
+  $('editBtn').addEventListener('click', function () { openForm(current); });
+
+  $('toggleReg').addEventListener('click', function () {
+    call('setRegistration', { id: current.id, open: !current.regOpen }).then(function (r) {
+      NV.toast(r.ok ? (r.event.regOpen ? 'ההרשמה נפתחה' : 'ההרשמה נסגרה') : r.error);
+      refreshDetail(false);
+    });
+  });
+  $('rotateReg').addEventListener('click', function () {
+    if (!confirm('להחליף את קישור ההרשמה? הקישור הקודם יפסיק לעבוד מיד, וצריך יהיה לשלוח לשוטרים את הקישור החדש. שוטרים שכבר נרשמו לא מושפעים.')) return;
+    call('rotateRegKey', { id: current.id }).then(function (r) {
+      NV.toast(r.ok ? 'נוצר קישור הרשמה חדש' : r.error);
+      refreshDetail(false);
+    });
+  });
+  $('exitBtn').addEventListener('click', function () {
+    var open = !current.exitOpen;
+    var msg = open
+      ? 'להכריז על סיום האירוע? מרגע זה השוטרים יוכלו לסרוק יציאה.'
+      : 'לבטל את הכרזת הסיום? סריקת היציאה תיסגר. יציאות שכבר נרשמו יישמרו.';
+    if (!confirm(msg)) return;
+    call('setExit', { id: current.id, open: open }).then(function (r) {
+      NV.toast(r.ok ? (open ? 'הסיום הוכרז. סריקת היציאה פתוחה' : 'ההכרזה בוטלה') : r.error);
+      refreshDetail(false);
+    });
+  });
+
+  $('exportBtn').addEventListener('click', function () {
+    call('exportEvent', { id: current.id }).then(function (r) {
+      if (!r.ok) { NV.toast(r.error); return; }
+      var head = ['מספר אישי', 'טלפון', 'דואר אלקטרוני', 'זמן הרשמה', 'שעת הגעה', 'שעת יציאה', 'משך נוכחות', 'חריגות'];
+      var asText = function (v) { return '="' + String(v).replace(/"/g, '') + '"'; };
+      var cell = function (v) { v = String(v === undefined ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var lines = [head.join(',')].concat(r.rows.map(function (x) {
+        return [asText(x.pn), asText(x.phone), cell(x.email), cell(NV.fmtDateTime(x.regAt)), cell(NV.fmtTime(x.inAt)), cell(NV.fmtTime(x.outAt)), cell(NV.duration(x.inAt, x.outAt)), cell(x.flags)].join(',');
+      }));
+      var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'נוכחות-' + r.event.date + '-' + r.event.name.replace(/[\\\/:*?"<>|]/g, '').slice(0, 40) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    });
+  });
+
+  // ===== רשימת מאושרים =====
+  function loadWhitelist() {
+    view('whitelistView');
+    notice('wlNotice');
+    $('wlStatus').textContent = 'טוען…';
+    call('getWhitelist').then(function (r) { renderWl(r.count); });
+  }
+  function renderWl(n) {
+    $('wlStatus').className = 'notice ' + (n ? 'ok' : 'warn');
+    $('wlStatus').textContent = n
+      ? 'ברשימה ' + n.toLocaleString('he-IL') + ' מספרים אישיים. רק הם יכולים להירשם.'
+      : 'הרשימה ריקה — כרגע כל מי שמקבל את קישור ההרשמה יכול להירשם.';
+  }
+  function saveWl(mode) {
+    var text = $('wlText').value;
+    if (mode === 'clear' && !confirm('לנקות את הרשימה? לאחר מכן כל מי שמקבל את הקישור יוכל להירשם.')) return;
+    if (mode === 'replace' && !confirm('להחליף את כל הרשימה הקיימת ברשימה שהודבקה?')) return;
+    call('setWhitelist', { mode: mode, numbers: text }).then(function (r) {
+      if (!r.ok) { notice('wlNotice', 'bad', r.error); return; }
+      $('wlText').value = '';
+      notice('wlNotice', 'ok', 'הרשימה עודכנה.');
+      renderWl(r.count);
+    }).catch(function (err) { notice('wlNotice', 'bad', err.message); });
+  }
+  $('wlReplace').addEventListener('click', function () { saveWl('replace'); });
+  $('wlAdd').addEventListener('click', function () { saveWl('add'); });
+  $('wlClear').addEventListener('click', function () { saveWl('clear'); });
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && !$('detailView').hidden) refreshDetail(false);
+  });
+
+  if (session) loadEvents(); else view('loginView');
+})();
+</script>
+</body>
+</html>

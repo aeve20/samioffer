@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15213B">
+<meta name="robots" content="noindex, nofollow">
+<title>הרשמה לאירוע — נוכחות</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <img class="brand-mark" src="icon.svg" alt="">
+  <span class="brand">נוכחות</span>
+  <span class="spacer"></span>
+  <span class="tag">הרשמה</span>
+</header>
+
+<main class="wrap">
+  <section id="loading" class="card center"><span class="spinner"></span><p class="muted">טוען את פרטי האירוע…</p></section>
+
+  <section id="invalid" class="card" hidden>
+    <p class="eyebrow">הקישור אינו בתוקף</p>
+    <h2>לא ניתן להירשם דרך הקישור הזה</h2>
+    <p class="muted">ייתכן שהקישור הוחלף בקישור חדש. בקש מאחראי האירוע את הקישור העדכני.</p>
+  </section>
+
+  <section id="eventCard" class="card dark" hidden>
+    <p class="eyebrow">הרשמה לאירוע</p>
+    <h1 id="evName"></h1>
+    <div class="event-meta"><span id="evDate"></span><span id="evTime"></span></div>
+    <div id="slots" class="btn-row"></div>
+  </section>
+
+  <section id="closed" class="card" hidden>
+    <h2 id="closedTitle">ההרשמה נסגרה</h2>
+    <p class="muted" id="closedText">כל המקומות לאירוע נתפסו.</p>
+  </section>
+
+  <section id="already" class="card" hidden>
+    <p class="eyebrow">כבר נרשמת</p>
+    <h2>ההרשמה שלך שמורה במכשיר הזה</h2>
+    <p class="muted">ביום האירוע פתח את דף הנוכחות וסרוק את הקוד שעל המסך בנקודת הריכוז.</p>
+    <a class="btn block gold" id="alreadyLink" href="#">לדף הנוכחות שלי</a>
+  </section>
+
+  <form id="form" class="card" novalidate hidden>
+    <h2>פרטי ההרשמה</h2>
+    <p class="muted small">לא נדרש שם. הפרטים משמשים רק לזיהוי ולניהול הנוכחות באירוע.</p>
+
+    <label for="pn">מספר אישי</label>
+    <input id="pn" class="ltr" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required>
+    <div class="err" id="pnErr"></div>
+
+    <label for="phone">טלפון נייד</label>
+    <input id="phone" class="ltr" type="tel" inputmode="tel" autocomplete="tel" placeholder="05X-XXX-XXXX" maxlength="14" required>
+    <div class="err" id="phoneErr"></div>
+
+    <label for="email">דואר אלקטרוני</label>
+    <input id="email" class="ltr" type="email" inputmode="email" autocomplete="email" maxlength="100" required>
+    <div class="field-hint">לצורך יצירת קשר בנוגע לאירוע בלבד</div>
+    <div class="err" id="emailErr"></div>
+
+    <label class="check"><input id="consent" type="checkbox"> אני מאשר שמירת הפרטים לצורך ניהול הנוכחות באירוע</label>
+    <div class="err" id="consentErr"></div>
+
+    <div id="formNotice"></div>
+    <button class="btn block xl" id="submit" type="submit">הרשמה</button>
+  </form>
+
+  <section id="done" class="card" hidden>
+    <div class="center">
+      <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40" fill="#2B7A6B"/><path d="M25 43 L37 55 L60 31" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h2 style="margin-top:10px">נרשמת בהצלחה</h2>
+      <p class="muted" id="doneText"></p>
+    </div>
+    <div class="notice info">
+      <b>חשוב:</b> שמור את דף הנוכחות במסך הבית של הטלפון, כדי להגיע אליו בלחיצה ביום האירוע.
+      <ol class="steps small">
+        <li>באנדרואיד: תפריט הדפדפן ← "הוספה למסך הבית"</li>
+        <li>באייפון: כפתור השיתוף ← "הוספה למסך הבית"</li>
+      </ol>
+    </div>
+    <a class="btn block gold xl" id="doneLink" href="#">לדף הנוכחות שלי</a>
+  </section>
+
+  <p class="footer-note">מערכת נוכחות חכמה</p>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  var e = NV.param('e');
+  var k = NV.param('k');
+  var $ = function (id) { return document.getElementById(id); };
+  var show = function (id, on) { $(id).hidden = !on; };
+  var scanLink = 'scan.html?e=' + encodeURIComponent(e);
+
+  function fillEvent(ev) {
+    $('evName').textContent = ev.name;
+    $('evDate').textContent = NV.fmtDate(ev.date);
+    $('evTime').textContent = 'שעות ' + NV.timeRange(ev.start, ev.end);
+    show('eventCard', true);
+  }
+
+  function init() {
+    if (!e || !k) { show('loading', false); show('invalid', true); return; }
+    NV.api('regInfo', { e: e, k: k }).then(function (r) {
+      show('loading', false);
+      if (!r.ok || !r.valid) { show('invalid', true); return; }
+      fillEvent(r.event);
+      if (NV.getAuth(e)) {
+        $('alreadyLink').href = scanLink;
+        show('already', true);
+        return;
+      }
+      if (!r.open) {
+        if (!r.full) {
+          $('closedTitle').textContent = 'ההרשמה סגורה';
+          $('closedText').textContent = 'ההרשמה לאירוע אינה פתוחה כרגע.';
+        }
+        show('closed', true);
+        return;
+      }
+      $('slots').innerHTML = '<span class="chip gold">נותרו ' + r.remaining + ' מקומות</span>';
+      show('form', true);
+    }).catch(function (err) {
+      show('loading', false);
+      $('invalid').querySelector('h2').textContent = err.message;
+      $('invalid').querySelector('.eyebrow').textContent = 'שגיאה';
+      $('invalid').querySelector('p.muted').textContent = 'בדוק את החיבור לרשת ונסה לרענן את הדף.';
+      show('invalid', true);
+    });
+  }
+
+  function setErr(id, msg) {
+    $(id + 'Err').textContent = msg || '';
+    var input = $(id);
+    if (input && input.tagName === 'INPUT') input.classList.toggle('invalid', !!msg);
+  }
+
+  function validate() {
+    var ok = true;
+    var pn = $('pn').value.replace(/[\s-]/g, '');
+    var phone = $('phone').value.replace(/[\s\-()+]/g, '').replace(/^972/, '0');
+    var email = $('email').value.trim();
+    setErr('pn', /^\d{5,10}$/.test(pn) ? '' : (ok = false, 'יש להזין מספר אישי, ספרות בלבד'));
+    setErr('phone', /^05\d{8}$/.test(phone) ? '' : (ok = false, 'יש להזין מספר נייד בן 10 ספרות שמתחיל ב-05'));
+    setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : (ok = false, 'כתובת הדואר אינה תקינה'));
+    setErr('consent', $('consent').checked ? '' : (ok = false, 'יש לאשר כדי להירשם'));
+    return ok ? { pn: pn, phone: phone, email: email } : null;
+  }
+
+  ['pn', 'phone', 'email'].forEach(function (id) {
+    $(id).addEventListener('input', function () { setErr(id, ''); $('formNotice').innerHTML = ''; });
+  });
+  $('consent').addEventListener('change', function () { setErr('consent', ''); });
+
+  $('form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var data = validate();
+    if (!data) return;
+    var btn = $('submit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner light"></span> נרשם…';
+    $('formNotice').innerHTML = '';
+    var attempt = 0;
+    (function send() {
+      NV.api('register', Object.assign({ e: e, k: k, consent: true, device: NV.deviceId() }, data)).then(function (r) {
+        if (!r.ok && r.retry && attempt++ < 3) { setTimeout(send, 1200 * attempt); return; }
+        btn.disabled = false;
+        btn.textContent = 'הרשמה';
+        if (!r.ok) {
+          $('formNotice').innerHTML = '<div class="notice bad">' + NV.esc(r.error) + '</div>';
+          if (r.code === 'FULL' || r.code === 'CLOSED') { show('form', false); show('closed', true); }
+          return;
+        }
+        NV.setAuth(e, r.token, r.event);
+        show('form', false);
+        $('slots').innerHTML = '';
+        $('doneText').textContent = r.already
+          ? 'כבר היית רשום לאירוע. ההרשמה שוחזרה למכשיר הזה.'
+          : 'מקומך באירוע שמור. ביום האירוע סרוק את הקוד שעל המסך בנקודת הריכוז.';
+        $('doneLink').href = scanLink;
+        show('done', true);
+        window.scrollTo(0, 0);
+      }).catch(function (err) {
+        if (attempt++ < 3) { setTimeout(send, 1500 * attempt); return; }
+        btn.disabled = false;
+        btn.textContent = 'הרשמה';
+        $('formNotice').innerHTML = '<div class="notice bad">' + NV.esc(err.message) + '. נסה שוב.</div>';
+      });
+    })();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

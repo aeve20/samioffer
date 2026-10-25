@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15213B">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="נוכחות">
+<title>הנוכחות שלי</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .state { display: flex; align-items: center; gap: 16px; }
+  .state-icon { width: 64px; height: 64px; flex: none; border-radius: 50%; display: grid; place-items: center; }
+  .state-icon.wait { background: #EBE3D2; }
+  .state-icon.in { background: var(--ok); }
+  .state-icon.out { background: var(--navy); }
+  .state h2 { margin: 0; font-size: 24px; }
+  .state p { margin: 2px 0 0; }
+  .times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .time-box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .time-box .lbl { font-size: 13px; color: var(--muted); }
+  .time-box .val { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .flags { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .overlay { position: fixed; inset: 0; z-index: 50; background: #0D1526; color: var(--cream); display: flex; flex-direction: column; }
+  .overlay .bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top)); }
+  .viewport { position: relative; flex: 1; overflow: hidden; display: grid; place-items: center; }
+  .viewport video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .frame { position: relative; width: min(72vw, 340px); aspect-ratio: 1; border-radius: 22px; border: 4px solid var(--gold); box-shadow: 0 0 0 9999px rgba(13, 21, 38, .55); }
+  .scan-line { position: absolute; left: 8%; right: 8%; height: 3px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 12px var(--gold); animation: sweep 2s ease-in-out infinite; }
+  @keyframes sweep { 0%, 100% { top: 10%; } 50% { top: 88%; } }
+  .hint { padding: 18px 20px; padding-bottom: max(22px, env(safe-area-inset-bottom)); text-align: center; font-size: 17px; }
+  .hint .muted { color: #B9C0D0; font-size: 14px; margin-top: 4px; }
+
+  .result { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 22px; text-align: center; background: var(--cream); }
+  .result.ok { background: #1F6B5D; color: #fff; }
+  .result.warn { background: #FBEFD6; color: #5C3D07; }
+  .result.bad { background: #8F302C; color: #fff; }
+  .result.pending { background: var(--navy); color: var(--cream); }
+  .result .big { font-family: var(--display); font-size: 34px; font-weight: 700; margin: 18px 0 4px; line-height: 1.2; }
+  .result .time { font-size: 56px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; margin: 8px 0; }
+  .result .sub { font-size: 17px; opacity: .92; max-width: 420px; }
+  .result ul { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; }
+  .result ul li { background: rgba(0, 0, 0, .12); border-radius: 10px; padding: 8px 12px; font-size: 15px; }
+  .result.warn ul li { background: rgba(138, 90, 11, .12); }
+  .result .btn { margin-top: 26px; min-width: 200px; }
+  .result .icon { width: 120px; height: 120px; }
+  .pop { animation: pop .35s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .linkish { background: none; border: none; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 6px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <img class="brand-mark" src="icon.svg" alt="">
+  <span class="brand">נוכחות</span>
+  <span class="spacer"></span>
+  <span class="tag" id="netTag" hidden>אין חיבור</span>
+</header>
+
+<main class="wrap">
+  <section id="loading" class="card center"><span class="spinner"></span><p class="muted">טוען…</p></section>
+
+  <section id="noEvent" class="card" hidden>
+    <h2>אין אירוע שמור במכשיר</h2>
+    <p class="muted">כדי להשתמש בדף הנוכחות יש להירשם קודם דרך קישור ההרשמה שקיבלת מאחראי האירוע.</p>
+  </section>
+
+  <section id="eventCard" class="card dark" hidden>
+    <p class="eyebrow">האירוע שלי</p>
+    <h1 id="evName"></h1>
+    <div class="event-meta"><span id="evDate"></span><span id="evTime"></span></div>
+  </section>
+
+  <form id="login" class="card" novalidate hidden>
+    <h2>זיהוי במכשיר</h2>
+    <p class="muted small" id="loginText">המכשיר אינו מזוהה. הזן את הפרטים שאיתם נרשמת לאירוע.</p>
+    <label for="lpn">מספר אישי</label>
+    <input id="lpn" class="ltr" type="text" inputmode="numeric" autocomplete="off" maxlength="12">
+    <label for="lphone">טלפון נייד</label>
+    <input id="lphone" class="ltr" type="tel" inputmode="tel" autocomplete="tel" maxlength="14">
+    <div id="loginNotice"></div>
+    <button class="btn block xl" id="loginBtn" type="submit">כניסה</button>
+  </form>
+
+  <section id="main" hidden>
+    <div class="card">
+      <div class="state">
+        <div class="state-icon wait" id="stateIcon"></div>
+        <div>
+          <h2 id="stateTitle"></h2>
+          <p class="muted" id="stateText"></p>
+        </div>
+      </div>
+      <div class="times">
+        <div class="time-box"><div class="lbl">הגעה</div><div class="val" id="tIn">—</div></div>
+        <div class="time-box"><div class="lbl">יציאה</div><div class="val" id="tOut">—</div></div>
+      </div>
+      <ul class="flags" id="myFlags"></ul>
+    </div>
+
+    <button class="btn block xl gold" id="scanBtn" type="button"></button>
+    <p class="center muted small" id="scanNote" style="margin:10px 0 0"></p>
+    <div id="pendingNotice"></div>
+
+    <div class="center" style="margin-top:18px">
+      <button class="linkish" id="refreshBtn" type="button">רענון מצב</button>
+      <button class="linkish" id="switchBtn" type="button">זה לא אני</button>
+    </div>
+  </section>
+
+  <p class="footer-note">מערכת נוכחות חכמה · <span id="pnTag"></span></p>
+</main>
+
+<section class="overlay" id="scanner" hidden>
+  <div class="bar">
+    <b>סריקת הקוד</b>
+    <button class="btn ghost light sm" id="cancelScan" type="button">ביטול</button>
+  </div>
+  <div class="viewport">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="frame"><div class="scan-line"></div></div>
+  </div>
+  <div class="hint">
+    כוון את המצלמה לקוד שעל המסך בנקודת הריכוז
+    <div class="muted" id="geoHint">מאתר מיקום…</div>
+  </div>
+</section>
+
+<section class="result" id="result" hidden aria-live="assertive"></section>
+
+<canvas id="grab" hidden></canvas>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var show = function (id, on) { $(id).hidden = !on; };
+
+  var eventId = NV.param('e') || NV.lastEvent() || '';
+  var pendingQr = NV.hashParam('q');
+  if (pendingQr && history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+
+  var state = { event: null, me: null, registered: false };
+  var geoPromise = null;
+  var stream = null;
+  var scanning = false;
+  var pollTimer = null;
+
+  var ICONS = {
+    wait: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#7A5C14" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    in: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    out: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg>'
+  };
+
+  // ===== טעינה ומצב =====
+
+  function start() {
+    if (!eventId) { show('loading', false); show('noEvent', true); return; }
+    var auth = NV.getAuth(eventId);
+    if (!auth) { loadStatus(true); return; }
+    loadStatus(false);
+  }
+
+  function loadStatus(noAuth) {
+    var auth = NV.getAuth(eventId);
+    return NV.api('status', { e: eventId, token: auth ? auth.token : '' }).then(function (r) {
+      setOnline(true);
+      show('loading', false);
+      if (!r.ok) {
+        if (r.code === 'NOEVENT') { NV.clearAuth(eventId); show('noEvent', true); return; }
+        NV.toast(r.error);
+        return;
+      }
+      state.event = r.event;
+      state.registered = r.registered;
+      state.me = r.me || null;
+      fillEvent();
+      if (!r.registered) {
+        if (auth) NV.clearAuth(eventId);
+        showLogin(noAuth ? 'הזן את הפרטים שאיתם נרשמת לאירוע.' : 'ההרשמה במכשיר הזה אינה בתוקף יותר. הזן שוב את הפרטים שאיתם נרשמת.');
+        return;
+      }
+      show('login', false);
+      render();
+      if (pendingQr) {
+        var q = pendingQr;
+        pendingQr = '';
+        geoPromise = getPosition();
+        handleCode(q);
+      }
+    }).catch(function () {
+      setOnline(false);
+      show('loading', false);
+      var cached = NV.store.get('status_' + eventId, null);
+      var known = NV.getAuth(eventId);
+      if (cached || known) {
+        // אין חיבור: ממשיכים לפי המצב השמור, כדי שאפשר יהיה לסרוק גם בלי רשת
+        state = cached || {
+          event: { name: known.name || 'האירוע שלי', date: known.date || '', start: '', end: '', exitOpen: false },
+          me: {}, registered: true
+        };
+        if (!state.event.start) state.event.start = '';
+        fillEvent();
+        show('login', false);
+        render();
+        if (pendingQr && known) {
+          var q = pendingQr;
+          pendingQr = '';
+          geoPromise = getPosition();
+          handleCode(q);
+        }
+      } else {
+        $('noEvent').querySelector('h2').textContent = 'אין חיבור לשרת';
+        $('noEvent').querySelector('p').textContent = 'בדוק את החיבור לרשת ונסה שוב.';
+        show('noEvent', true);
+      }
+    });
+  }
+
+  function fillEvent() {
+    var ev = state.event;
+    $('evName').textContent = ev.name;
+    $('evDate').textContent = NV.fmtDate(ev.date);
+    $('evTime').textContent = ev.start ? 'שעות ' + NV.timeRange(ev.start, ev.end) : '';
+    show('eventCard', true);
+  }
+
+  function showLogin(text) {
+    show('main', false);
+    $('loginText').textContent = text;
+    show('login', true);
+  }
+
+  function render() {
+    NV.store.set('status_' + eventId, state);
+    show('main', true);
+    var me = state.me || {};
+    var ev = state.event;
+    var pending = pendingCount();
+    $('tIn').textContent = me.inAt ? NV.fmtTime(me.inAt) : '—';
+    $('tOut').textContent = me.outAt ? NV.fmtTime(me.outAt) : '—';
+    $('pnTag').innerHTML = me.pn ? 'מספר אישי <bdi dir="ltr">' + NV.esc(me.pn) + '</bdi>' : '';
+    var flags = (me.inFlags || []).concat(me.outFlags || []);
+    $('myFlags').innerHTML = flags.map(function (f) { return '<li class="chip warn">' + NV.esc(f) + '</li>'; }).join('');
+
+    var btn = $('scanBtn');
+    var icon = $('stateIcon');
+    btn.hidden = false;
+    btn.disabled = false;
+    $('scanNote').textContent = '';
+    if (me.outAt) {
+      icon.className = 'state-icon out';
+      icon.innerHTML = ICONS.out;
+      $('stateTitle').textContent = 'יצאת מהאירוע';
+      $('stateText').textContent = 'משך הנוכחות: ' + NV.duration(me.inAt, me.outAt) + ' שעות. תודה!';
+      btn.hidden = true;
+    } else if (me.inAt) {
+      icon.className = 'state-icon in';
+      icon.innerHTML = ICONS.in;
+      $('stateTitle').textContent = 'נוכחותך נרשמה';
+      if (ev.exitOpen) {
+        $('stateText').textContent = 'האירוע הסתיים. סרוק את הקוד ביציאה.';
+        btn.textContent = 'סריקת יציאה';
+      } else {
+        $('stateText').textContent = 'אתה רשום כנוכח באירוע.';
+        btn.textContent = 'סריקת יציאה';
+        btn.disabled = true;
+        $('scanNote').textContent = 'סריקת היציאה תיפתח לאחר הכרזת הסיום של מנהל האירוע';
+      }
+    } else {
+      icon.className = 'state-icon wait';
+      icon.innerHTML = ICONS.wait;
+      $('stateTitle').textContent = 'טרם נרשמה הגעה';
+      $('stateText').textContent = 'בהגעה לנקודת הריכוז, סרוק את הקוד שעל המסך.';
+      btn.textContent = 'סריקת הגעה';
+    }
+    if (pending) {
+      btn.disabled = true;
+      $('scanNote').textContent = '';
+    }
+    renderPending();
+    schedulePoll();
+  }
+
+  function schedulePoll() {
+    clearTimeout(pollTimer);
+    var me = state.me || {};
+    if (me.inAt && !me.outAt && !state.event.exitOpen) {
+      pollTimer = setTimeout(function () { loadStatus(false); }, 30000);
+    }
+  }
+
+  function setOnline(on) { $('netTag').hidden = on; }
+
+  // ===== תור סריקות שלא נשלחו =====
+
+  function queue() { return NV.store.get('queue', []); }
+  function saveQueue(q) { NV.store.set('queue', q); }
+  function pendingCount() { return queue().filter(function (x) { return x.e === eventId; }).length; }
+
+  function renderPending() {
+    var n = pendingCount();
+    $('pendingNotice').innerHTML = n ? '<div class="notice warn"><span class="spinner"></span> סריקה שמורה במכשיר וממתינה לשליחה. היא תישלח אוטומטית כשיחזור החיבור.</div>' : '';
+  }
+
+  var flushing = false;
+  function flush() {
+    if (flushing) return Promise.resolve();
+    var q = queue();
+    if (!q.length) return Promise.resolve();
+    flushing = true;
+    var item = q[0];
+    return NV.api('scan', item, { timeout: 20000 }).then(function (r) {
+      setOnline(true);
+      if (!r.ok && r.retry) throw Object.assign(new Error('busy'), { retry: true });
+      saveQueue(queue().filter(function (x) { return x.scanId !== item.scanId; }));
+      flushing = false;
+      onServerResult(item, r);
+      return flush();
+    }).catch(function (err) {
+      flushing = false;
+      if (err && err.network) setOnline(false);
+      var list = queue();
+      list.forEach(function (x) { if (x.scanId === item.scanId) x.tries = (x.tries || 0) + 1; });
+      saveQueue(list);
+      throw err;
+    });
+  }
+
+  function onServerResult(item, r) {
+    var waiting = $('result').dataset.scanId === item.scanId;
+    if (r.ok) {
+      state.me = state.me || {};
+      if (r.type === 'IN') { state.me.inAt = r.at; state.me.inFlags = r.flags || []; }
+      if (r.type === 'OUT') { state.me.outAt = r.at; state.me.outFlags = r.flags || []; }
+    }
+    if (r.code === 'AUTH') {
+      NV.clearAuth(eventId);
+      hideResult();
+      showLogin('ההרשמה במכשיר הזה אינה בתוקף יותר. הזן שוב את הפרטים שאיתם נרשמת.');
+      return;
+    }
+    render();
+    if (waiting || !$('result').hidden) showServerResult(r, item);
+    else if (r.ok) NV.toast(r.type === 'IN' ? 'ההגעה נרשמה בשרת' : 'היציאה נרשמה בשרת');
+    else NV.toast(r.error || 'הסריקה נדחתה', 5000);
+    loadStatus(false);
+  }
+
+  var retryTimer = null;
+  function scheduleFlush(ms) {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(function () {
+      flush().then(renderPending, function () { renderPending(); if (queue().length) scheduleFlush(5000); });
+    }, ms);
+  }
+  window.addEventListener('online', function () { scheduleFlush(300); });
+
+  // ===== מיקום =====
+
+  function getPosition() {
+    return new Promise(function (resolve) {
+      if (!navigator.geolocation) { resolve({ error: 'המכשיר אינו תומך באיתור מיקום' }); return; }
+      var done = false;
+      var timer = setTimeout(function () { if (!done) { done = true; resolve({ error: 'איתור המיקום לקח יותר מדי זמן' }); } }, 15000);
+      navigator.geolocation.getCurrentPosition(function (p) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) });
+      }, function (err) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ error: err && err.code === 1 ? 'לא ניתנה הרשאה למיקום' : 'לא ניתן לאתר מיקום' });
+      }, { enableHighAccuracy: true, timeout: 14000, maximumAge: 20000 });
+    });
+  }
+
+  // ===== מצלמה =====
+
+  function openScanner() {
+    hideResult();
+    geoPromise = getPosition();
+    $('geoHint').textContent = 'מאתר מיקום…';
+    geoPromise.then(function (g) { $('geoHint').textContent = g.error ? g.error : 'המיקום אותר'; });
+    show('scanner', true);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      cameraError('הדפדפן אינו מאפשר גישה למצלמה');
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+      .then(function (s) {
+        stream = s;
+        var v = $('video');
+        v.srcObject = s;
+        v.setAttribute('playsinline', '');
+        return v.play();
+      })
+      .then(function () { scanning = true; tick(); })
+      .catch(function (err) {
+        cameraError(err && err.name === 'NotAllowedError' ? 'לא ניתנה הרשאה למצלמה' : 'לא ניתן להפעיל את המצלמה');
+      });
+  }
+
+  function cameraError(msg) {
+    closeScanner();
+    showResult('bad', {
+      title: msg,
+      sub: 'אפשר לאשר הרשאת מצלמה בהגדרות הדפדפן ולנסות שוב, או לסרוק את הקוד שעל המסך עם אפליקציית המצלמה של הטלפון.',
+      button: 'הבנתי'
+    });
+  }
+
+  function closeScanner() {
+    scanning = false;
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    $('video').srcObject = null;
+    show('scanner', false);
+  }
+
+  var lastTick = 0;
+  function tick(ts) {
+    if (!scanning) return;
+    requestAnimationFrame(tick);
+    if (ts && ts - lastTick < 120) return;
+    lastTick = ts || 0;
+    var v = $('video');
+    if (v.readyState < 2 || !v.videoWidth) return;
+    var c = $('grab');
+    var w = Math.min(640, v.videoWidth);
+    var h = Math.round(v.videoHeight * (w / v.videoWidth));
+    c.width = w;
+    c.height = h;
+    var ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(v, 0, 0, w, h);
+    var img = ctx.getImageData(0, 0, w, h);
+    var code = jsQR(img.data, w, h, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) {
+      if (navigator.vibrate) navigator.vibrate(60);
+      closeScanner();
+      handleCode(code.data);
+    }
+  }
+
+  // ===== טיפול בקוד שנסרק =====
+
+  function extractToken(raw) {
+    var s = String(raw || '').trim();
+    var i = s.indexOf('#q=');
+    if (i >= 0) s = decodeURIComponent(s.slice(i + 3).split('&')[0]);
+    var p = s.split('.');
+    if (p.length !== 4 || p[0] !== 'NV1') return null;
+    return { raw: s, ev: p[1] };
+  }
+
+  function handleCode(raw) {
+    var t = extractToken(raw);
+    if (!t) {
+      showResult('bad', { title: 'זה לא קוד הנוכחות', sub: 'סרוק את הקוד שמוצג על מסך הנוכחות בנקודת הריכוז.', button: 'סריקה חוזרת', again: true });
+      return;
+    }
+    if (t.ev !== eventId) {
+      showResult('bad', { title: 'הקוד שייך לאירוע אחר', sub: 'ודא שאתה סורק את מסך הנוכחות של האירוע שאליו נרשמת.', button: 'סגירה' });
+      return;
+    }
+    var auth = NV.getAuth(eventId);
+    if (!auth) { showLogin('הזן את הפרטים שאיתם נרשמת לאירוע.'); pendingQr = t.raw; return; }
+    var scanId = 's' + NV.randomId(20);
+    showResult('pending', { title: 'הקוד נקלט', sub: 'מאמת מיקום ושולח…', spinner: true, scanId: scanId });
+    var gp = geoPromise || getPosition();
+    geoPromise = null;
+    gp.then(function (g) {
+      var item = {
+        scanId: scanId, e: eventId, token: auth.token, qr: t.raw, device: NV.deviceId(),
+        deviceTime: new Date().toISOString(),
+        lat: g.error ? '' : g.lat, lng: g.error ? '' : g.lng, acc: g.error ? '' : g.acc,
+        geoError: g.error || ''
+      };
+      var q = queue();
+      q.push(item);
+      saveQueue(q);
+      var savedNotice = function () {
+        var stillQueued = queue().some(function (x) { return x.scanId === scanId; });
+        if (!stillQueued || $('result').dataset.scanId !== scanId) return;
+        showResult('warn', {
+          title: 'הסריקה נשמרה במכשיר',
+          sub: 'אין כרגע חיבור לשרת. הסריקה תישלח אוטומטית ברגע שהחיבור יחזור — אין צורך לסרוק שוב.',
+          button: 'סגירה', scanId: scanId
+        });
+        render();
+        scheduleFlush(4000);
+      };
+      setTimeout(savedNotice, 25000);
+      return flush().catch(savedNotice);
+    });
+  }
+
+  function showServerResult(r, item) {
+    var localWarn = '';
+    if (item && item.geoError) localWarn = item.geoError;
+    if (r.ok && r.already) {
+      showResult('ok', { title: 'כבר נרשמה יציאה', time: NV.fmtTime(r.at), sub: 'אין צורך לסרוק שוב.', button: 'סגירה' });
+      return;
+    }
+    if (r.ok) {
+      var isIn = r.type === 'IN';
+      var flags = r.flags || [];
+      showResult(flags.length ? 'warn' : 'ok', {
+        title: isIn ? 'ההגעה נרשמה' : 'היציאה נרשמה',
+        time: NV.fmtTime(r.at),
+        sub: flags.length ? 'הסריקה נקלטה וסומנה לבדיקה של מנהל האירוע:' : (isIn ? 'נוכחותך אומתה. בהצלחה!' : 'תודה, נסיעה בטוחה הביתה.'),
+        flags: flags,
+        button: 'סגירה'
+      });
+      return;
+    }
+    if (r.notYet) {
+      showResult('warn', { title: 'היציאה עדיין לא נפתחה', sub: r.error, button: 'סגירה' });
+      return;
+    }
+    showResult('bad', { title: 'הסריקה נדחתה', sub: r.error || 'נסה לסרוק שוב.', button: 'סריקה חוזרת', again: true, flags: localWarn ? [localWarn] : [] });
+  }
+
+  function showResult(kind, o) {
+    var el = $('result');
+    el.className = 'result ' + kind;
+    el.dataset.scanId = o.scanId || '';
+    var icon = '';
+    if (o.spinner) icon = '<span class="spinner light" style="width:64px;height:64px;border-width:6px"></span>';
+    else if (kind === 'ok') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#fff"/><path d="M34 62 L52 80 L87 43" fill="none" stroke="#1F6B5D" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    else if (kind === 'warn') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#8A5A0B"/><path d="M60 32 V68" stroke="#fff" stroke-width="10" stroke-linecap="round"/><circle cx="60" cy="86" r="6" fill="#fff"/></svg>';
+    else if (kind === 'bad') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#fff"/><path d="M40 40 L80 80 M80 40 L40 80" stroke="#8F302C" stroke-width="10" stroke-linecap="round"/></svg>';
+    var html = icon + '<div class="big">' + NV.esc(o.title) + '</div>';
+    if (o.time) html += '<div class="time">' + NV.esc(o.time) + '</div>';
+    if (o.sub) html += '<div class="sub">' + NV.esc(o.sub) + '</div>';
+    if (o.flags && o.flags.length) html += '<ul>' + o.flags.map(function (f) { return '<li>' + NV.esc(f) + '</li>'; }).join('') + '</ul>';
+    if (o.button) html += '<button class="btn ' + (kind === 'ok' || kind === 'bad' || kind === 'pending' ? 'gold' : '') + ' xl" type="button" id="resultBtn">' + NV.esc(o.button) + '</button>';
+    el.innerHTML = html;
+    el.hidden = false;
+    var b = $('resultBtn');
+    if (b) b.addEventListener('click', function () { hideResult(); if (o.again) openScanner(); });
+  }
+
+  function hideResult() {
+    $('result').hidden = true;
+    $('result').dataset.scanId = '';
+  }
+
+  // ===== אירועים בממשק =====
+
+  $('scanBtn').addEventListener('click', openScanner);
+  $('cancelScan').addEventListener('click', closeScanner);
+  $('refreshBtn').addEventListener('click', function () {
+    NV.toast('מרענן…', 1200);
+    loadStatus(false);
+    scheduleFlush(100);
+  });
+  $('switchBtn').addEventListener('click', function () {
+    if (!confirm('לנתק את ההרשמה מהמכשיר הזה? אפשר יהיה להיכנס שוב עם המספר האישי והטלפון.')) return;
+    NV.clearAuth(eventId);
+    state.me = null;
+    showLogin('הזן את הפרטים שאיתם נרשמת לאירוע.');
+  });
+
+  $('login').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var pn = $('lpn').value.replace(/[\s-]/g, '');
+    var phone = $('lphone').value.replace(/[\s\-()+]/g, '').replace(/^972/, '0');
+    if (!/^\d{5,10}$/.test(pn) || !/^05\d{8}$/.test(phone)) {
+      $('loginNotice').innerHTML = '<div class="notice bad">יש להזין מספר אישי ומספר נייד תקינים</div>';
+      return;
+    }
+    var btn = $('loginBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner light"></span>';
+    NV.api('login', { e: eventId, pn: pn, phone: phone, device: NV.deviceId() }).then(function (r) {
+      btn.disabled = false;
+      btn.textContent = 'כניסה';
+      if (!r.ok) { $('loginNotice').innerHTML = '<div class="notice bad">' + NV.esc(r.error) + '</div>'; return; }
+      NV.setAuth(eventId, r.token, r.event);
+      $('loginNotice').innerHTML = '';
+      show('login', false);
+      show('loading', true);
+      loadStatus(false);
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = 'כניסה';
+      $('loginNotice').innerHTML = '<div class="notice bad">' + NV.esc(err.message) + '</div>';
+    });
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && state.event) { loadStatus(false); scheduleFlush(200); }
+    if (document.hidden && scanning) closeScanner();
+  });
+
+  // קוד שנפתח מאפליקציית המצלמה כשהדף כבר פתוח
+  window.addEventListener('hashchange', function () {
+    var q = NV.hashParam('q');
+    if (!q) return;
+    if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+    if (state.event && NV.getAuth(eventId)) {
+      geoPromise = getPosition();
+      handleCode(q);
+    } else {
+      pendingQr = q;
+      loadStatus(false);
+    }
+  });
+
+  if (queue().length) scheduleFlush(500);
+  start();
+})();
+</script>
+</body>
+</html>
