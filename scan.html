@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#15213B">
+<meta name="theme-color" content="#072A1C">
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="נוכחות">
 <title>הנוכחות שלי</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
   .state { display: flex; align-items: center; gap: 16px; }
   .state-icon { width: 64px; height: 64px; flex: none; border-radius: 50%; display: grid; place-items: center; }
-  .state-icon.wait { background: #EBE3D2; }
+  .state-icon.wait { background: #ECE4D0; }
   .state-icon.in { background: var(--ok); }
-  .state-icon.out { background: var(--navy); }
+  .state-icon.out { background: var(--green-900); }
   .state h2 { margin: 0; font-size: 24px; }
   .state p { margin: 2px 0 0; }
   .times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
@@ -29,23 +29,23 @@
   .time-box .val { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .flags { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
 
-  .overlay { position: fixed; inset: 0; z-index: 50; background: #0D1526; color: var(--cream); display: flex; flex-direction: column; }
+  .overlay { position: fixed; inset: 0; z-index: 50; background: #04170F; color: var(--cream); display: flex; flex-direction: column; }
   .overlay .bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top)); }
   .viewport { position: relative; flex: 1; overflow: hidden; display: grid; place-items: center; }
   .viewport video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .frame { position: relative; width: min(72vw, 340px); aspect-ratio: 1; border-radius: 22px; border: 4px solid var(--gold); box-shadow: 0 0 0 9999px rgba(13, 21, 38, .55); }
+  .frame { position: relative; width: min(72vw, 340px); aspect-ratio: 1; border-radius: 22px; border: 4px solid var(--gold); box-shadow: 0 0 0 9999px rgba(4, 23, 15, .55); }
   .scan-line { position: absolute; left: 8%; right: 8%; height: 3px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 12px var(--gold); animation: sweep 2s ease-in-out infinite; }
   @keyframes sweep { 0%, 100% { top: 10%; } 50% { top: 88%; } }
   .hint { padding: 18px 20px; padding-bottom: max(22px, env(safe-area-inset-bottom)); text-align: center; font-size: 17px; }
-  .hint .muted { color: #B9C0D0; font-size: 14px; margin-top: 4px; }
+  .hint .muted { color: #B8C9BE; font-size: 14px; margin-top: 4px; }
 
   .result { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 22px; text-align: center; background: var(--cream); }
-  .result.ok { background: #1F6B5D; color: #fff; }
+  .result.ok { background: radial-gradient(circle at 50% 35%, #16904F, #0A4A2C 72%); color: #fff; }
   .result.warn { background: #FBEFD6; color: #5C3D07; }
   .result.bad { background: #8F302C; color: #fff; }
-  .result.pending { background: var(--navy); color: var(--cream); }
-  .result .big { font-family: var(--display); font-size: 34px; font-weight: 700; margin: 18px 0 4px; line-height: 1.2; }
-  .result .time { font-size: 56px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; margin: 8px 0; }
+  .result.pending { background: radial-gradient(circle at 50% 35%, var(--green-800), var(--green-950) 75%); color: var(--cream); }
+  .result .big { font-family: var(--display); font-size: 36px; font-weight: 900; animation: rise .5s ease-out both .15s; margin: 18px 0 4px; line-height: 1.2; }
+  .result .time { animation: popIn .6s var(--ease-pop) both .25s; font-size: 60px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; margin: 8px 0; }
   .result .sub { font-size: 17px; opacity: .92; max-width: 420px; }
   .result ul { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; }
   .result ul li { background: rgba(0, 0, 0, .12); border-radius: 10px; padding: 8px 12px; font-size: 15px; }
@@ -58,11 +58,16 @@
 </style>
 </head>
 <body>
-<header class="topbar">
-  <img class="brand-mark" src="icon.svg" alt="">
-  <span class="brand">נוכחות</span>
-  <span class="spacer"></span>
-  <span class="tag" id="netTag" hidden>אין חיבור</span>
+<header class="hero compact">
+  <img class="hero-bg" src="img/stadium-960.webp" srcset="img/stadium-960.webp 960w, img/stadium-1920.webp 1920w" sizes="100vw" alt="" decoding="async" fetchpriority="high">
+  <span class="hero-tag" id="netTag" hidden>אין חיבור</span>
+  <div class="hero-inner">
+    <div class="emblem-badge"><img src="img/emblem-256.webp" alt="סמל מרחב כרמל"></div>
+    <div>
+      <p class="hero-kicker">מרחב כרמל</p>
+      <h1 class="hero-title">הנוכחות שלי</h1>
+    </div>
+  </div>
 </header>
 
 <main class="wrap">
@@ -158,9 +163,9 @@
   var pollTimer = null;
 
   var ICONS = {
-    wait: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#7A5C14" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    wait: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#7A5C0E" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
     in: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-    out: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg>'
+    out: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#D4A72C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg>'
   };
 
   // ===== טעינה ומצב =====
@@ -539,7 +544,7 @@
     el.dataset.scanId = o.scanId || '';
     var icon = '';
     if (o.spinner) icon = '<span class="spinner light" style="width:64px;height:64px;border-width:6px"></span>';
-    else if (kind === 'ok') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#fff"/><path d="M34 62 L52 80 L87 43" fill="none" stroke="#1F6B5D" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    else if (kind === 'ok') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#fff"/><path d="M34 62 L52 80 L87 43" fill="none" stroke="#0E6B3F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     else if (kind === 'warn') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#8A5A0B"/><path d="M60 32 V68" stroke="#fff" stroke-width="10" stroke-linecap="round"/><circle cx="60" cy="86" r="6" fill="#fff"/></svg>';
     else if (kind === 'bad') icon = '<svg class="icon pop" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="58" fill="#fff"/><path d="M40 40 L80 80 M80 40 L40 80" stroke="#8F302C" stroke-width="10" stroke-linecap="round"/></svg>';
     var html = icon + '<div class="big">' + NV.esc(o.title) + '</div>';

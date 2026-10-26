@@ -218,7 +218,7 @@
     var ctx = canvas.getContext('2d');
     ctx.fillStyle = opts.light || '#FFFFFF';
     ctx.fillRect(0, 0, px, px);
-    ctx.fillStyle = opts.dark || '#15213B';
+    ctx.fillStyle = opts.dark || '#04170F';
     for (var r = 0; r < count; r++) {
       for (var c = 0; c < count; c++) {
         if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
