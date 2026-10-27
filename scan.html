@@ -54,6 +54,22 @@
   .result .icon { width: 120px; height: 120px; }
   .pop { animation: pop .35s cubic-bezier(.2, 1.4, .4, 1); }
   @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .msgs { padding: 16px 18px; }
+  .msgs h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+  .msgs .count { font-size: 12px; font-weight: 700; background: var(--gold); color: var(--green-950); border-radius: 999px; padding: 1px 8px; }
+  .msg { padding: 10px 0; border-top: 1px solid var(--line); }
+  .msg:first-of-type { border-top: none; }
+  .msg .t { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .msg .x { white-space: pre-wrap; word-break: break-word; font-size: 17px; }
+  .msg.urgent { background: #FFF6DC; border: 1.5px solid var(--gold); border-radius: 12px; padding: 10px 12px; margin: 6px 0; }
+  .msg.urgent .x::before { content: 'דחוף · '; font-weight: 800; color: var(--warn); }
+  .msg.new { animation: popIn .6s var(--ease-pop) both; }
+  .msg.new .t::after { content: ' · חדש'; color: var(--ok); font-weight: 700; }
+  .more { background: none; border: none; color: var(--green-700); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 6px 0 0; }
+  .group-btn { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; text-decoration: none; background: #0F7A4A; color: #fff; font-weight: 700; font-size: 18px; border-radius: 16px; padding: 15px 18px; box-shadow: var(--shadow); animation: popIn .6s var(--ease-pop) both; }
+  .group-btn svg { width: 26px; height: 26px; flex: none; }
+  .group-btn.tg { background: #1F6FB2; }
+  .group-hint { text-align: center; font-size: 14px; color: var(--muted); margin-top: 12px; }
   .linkish { background: none; border: none; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 6px; }
 </style>
 </head>
@@ -98,6 +114,7 @@
   </form>
 
   <section id="main" hidden>
+    <div id="msgBox"></div>
     <div class="card">
       <div class="state">
         <div class="state-icon wait" id="stateIcon"></div>
@@ -116,6 +133,7 @@
     <button class="btn block xl gold" id="scanBtn" type="button"></button>
     <p class="center muted small" id="scanNote" style="margin:10px 0 0"></p>
     <div id="pendingNotice"></div>
+    <div id="groupBox"></div>
 
     <div class="center" style="margin-top:18px">
       <button class="linkish" id="refreshBtn" type="button">רענון מצב</button>
@@ -196,6 +214,9 @@
       state.event = r.event;
       state.registered = r.registered;
       state.me = r.me || null;
+      state.groupLink = r.groupLink || '';
+      state.groupAfter = !!r.groupLinkAfterArrival;
+      if (r.messages) state.messages = r.messages;
       fillEvent();
       if (!r.registered) {
         if (auth) NV.clearAuth(eventId);
@@ -253,6 +274,67 @@
     show('login', true);
   }
 
+  // ===== הודעות מהמפקדה וקבוצת האירוע =====
+  var showAllMsgs = false;
+  var firstRender = true;
+  function seenKey() { return 'seen_' + eventId; }
+  function renderMessages(announceNew) {
+    var list = state.messages || [];
+    var box = $('msgBox');
+    if (!list.length) { box.innerHTML = ''; return; }
+    var seen = NV.store.get(seenKey(), []);
+    var fresh = list.filter(function (m) { return seen.indexOf(m.id) < 0; });
+    var shown = showAllMsgs ? list : list.slice(0, 3);
+    box.innerHTML = '<div class="card msgs"><h3>הודעות מהמפקדה' + (fresh.length ? ' <span class="count">' + fresh.length + ' חדשות</span>' : '') + '</h3>' +
+      shown.map(function (m) {
+        var isNew = seen.indexOf(m.id) < 0;
+        return '<div class="msg' + (m.urgent ? ' urgent' : '') + (isNew ? ' new' : '') + '"><div class="t">' + NV.esc(NV.fmtTime(m.at)) + '</div><div class="x">' + NV.esc(m.text) + '</div></div>';
+      }).join('') +
+      (list.length > 3 ? '<button class="more" type="button" id="moreMsgs">' + (showAllMsgs ? 'הצגת פחות' : 'כל ההודעות (' + list.length + ')') + '</button>' : '') +
+      '</div>';
+    var more = $('moreMsgs');
+    if (more) more.addEventListener('click', function () { showAllMsgs = !showAllMsgs; renderMessages(false); });
+    if (announceNew && fresh.length) {
+      var urgent = fresh.some(function (m) { return m.urgent; });
+      NV.toast(urgent ? 'הודעה דחופה מהמפקדה' : 'הודעה חדשה מהמפקדה', 4000);
+      if (navigator.vibrate) navigator.vibrate(urgent ? [120, 80, 120] : 80);
+    }
+    setTimeout(function () {
+      NV.store.set(seenKey(), list.map(function (m) { return m.id; }).slice(0, 60));
+    }, 4000);
+  }
+
+  function renderGroup() {
+    var box = $('groupBox');
+    if (state.groupLink) {
+      var tg = /^https:\/\/t\.me\//.test(state.groupLink);
+      box.innerHTML = '<a class="group-btn' + (tg ? ' tg' : '') + '" href="' + NV.esc(state.groupLink) + '" target="_blank" rel="noopener">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+        'הצטרפות לקבוצת האירוע ' + (tg ? 'בטלגרם' : 'בוואטספ') + '</a>';
+    } else if (state.groupAfter) {
+      box.innerHTML = '<p class="group-hint">הקישור לקבוצת האירוע יופיע כאן אחרי סריקת ההגעה</p>';
+    } else {
+      box.innerHTML = '';
+    }
+  }
+
+  var msgTimer = null;
+  function pollMessages() {
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(function () {
+      var auth = NV.getAuth(eventId);
+      if (document.hidden || !auth || !state.registered) { pollMessages(); return; }
+      NV.api('messages', { e: eventId, token: auth.token }, { timeout: 15000 }).then(function (r) {
+        if (r.ok) {
+          var before = (state.messages || []).map(function (m) { return m.id; }).join(',');
+          state.messages = r.messages;
+          if (r.messages.map(function (m) { return m.id; }).join(',') !== before) renderMessages(true);
+        }
+        pollMessages();
+      }, pollMessages);
+    }, 60000);
+  }
+
   function render() {
     NV.store.set('status_' + eventId, state);
     show('main', true);
@@ -302,7 +384,11 @@
       $('scanNote').textContent = '';
     }
     renderPending();
+    renderMessages(!firstRender);
+    firstRender = false;
+    renderGroup();
     schedulePoll();
+    pollMessages();
   }
 
   function schedulePoll() {

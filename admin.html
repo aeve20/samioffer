@@ -56,7 +56,23 @@
   .ctl-item .why { color: var(--muted); }
   .placeholders code { background: #ECE4D0; border-radius: 6px; padding: 1px 6px; margin: 2px; display: inline-block; }
   .super-only-note { font-size: 13px; color: var(--muted); }
+  .msg-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; margin-top: 8px; font-size: 15px; }
+  .msg-item.urgent { border-color: var(--gold); background: #FFF8E6; }
+  .msg-item .t { color: var(--muted); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .msg-item .x { flex: 1; white-space: pre-wrap; word-break: break-word; }
   .tabs { display: flex; gap: 4px; align-items: center; }
+  .tab { white-space: nowrap; }
+  html, body { max-width: 100%; overflow-x: hidden; }
+  .topbar .brand small { white-space: nowrap; }
+  .server-warn { margin: 0 0 14px; }
+  @media (max-width: 900px) {
+    .topbar { flex-wrap: wrap; row-gap: 8px; padding: 8px 12px; }
+    .topbar .brand small { display: none; }
+    .topbar .spacer { display: none; }
+    .role-chip { margin-inline-start: auto; }
+    .tabs { order: 3; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .tabs .tab { flex: none; }
+  }
   .tab { background: transparent; color: #B8C9BE; border: none; font: inherit; font-size: 15px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
   .tab.active { background: var(--gold); color: var(--green-950); font-weight: 700; }
   .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
@@ -139,6 +155,8 @@
     <div id="loginNotice"></div>
     <button class="btn block xl gold" id="loginBtn" type="submit" style="margin-top:16px">כניסה</button>
   </form>
+
+  <div id="serverWarn" class="server-warn" hidden></div>
 
   <!-- רשימת אירועים -->
   <section id="eventsView" hidden>
@@ -238,6 +256,39 @@
           <b id="exitTitle"></b>
           <p class="small" id="exitText" style="margin:4px 0 10px"></p>
           <button class="btn" id="exitBtn" type="button"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="commsCard">
+      <h3>תקשורת עם השוטרים</h3>
+      <div class="two" style="margin-top:10px">
+        <div>
+          <label for="msgText" style="margin-top:0">הודעה חדשה לכל השוטרים באירוע</label>
+          <textarea id="msgText" maxlength="400" style="min-height:90px" placeholder="לדוגמה: ניתן להגיע לשער 1 לקבלת שתייה חמה"></textarea>
+          <div class="btn-row" style="align-items:center;margin-top:8px">
+            <label class="check" style="margin:0"><input id="msgUrgent" type="checkbox"> הודעה דחופה</label>
+            <span style="flex:1"></span>
+            <span class="muted small" id="msgCount">0/400</span>
+            <button class="btn gold" id="msgSend" type="button">פרסום</button>
+          </div>
+          <p class="field-hint">ההודעה מופיעה בראש דף הנוכחות של כל שוטר רשום, בתוך כדקה. אין חשיפה של מספרי טלפון.</p>
+          <div id="msgList"></div>
+        </div>
+        <div>
+          <label for="grpLink" style="margin-top:0">קישור הזמנה לקבוצת האירוע</label>
+          <input id="grpLink" class="ltr" type="text" placeholder="https://chat.whatsapp.com/...">
+          <div class="field-hint">קישור הזמנה של קהילה או קבוצה בוואטספ, או של קבוצה בטלגרם. הקישור יוצג רק לשוטרים הרשומים לאירוע.</div>
+          <label>מתי להציג את הקישור לשוטר</label>
+          <div class="radio-row">
+            <label><input type="radio" name="grpWhen" value="registered" checked> מיד אחרי ההרשמה</label>
+            <label><input type="radio" name="grpWhen" value="arrived"> רק אחרי סריקת הגעה</label>
+          </div>
+          <div id="grpNotice"></div>
+          <div class="btn-row">
+            <button class="btn" id="grpSave" type="button">שמירת הקישור</button>
+            <a class="btn ghost" id="grpTest" href="#" target="_blank" rel="noopener">בדיקת הקישור</a>
+          </div>
         </div>
       </div>
     </div>
@@ -369,8 +420,20 @@
     window.scrollTo(0, 0);
   }
 
+  var EXPECTED_SERVER = '1.4';
+  function checkServer(r) {
+    var v = r && r.v ? String(r.v) : '';
+    var num = function (x) { var q = String(x).split('.'); return (parseInt(q[0], 10) || 0) * 1000 + (parseInt(q[1], 10) || 0); };
+    var old = !v || num(v) < num(EXPECTED_SERVER);
+    if (!old) { $('serverWarn').hidden = true; return; }
+    $('serverWarn').innerHTML = '<div class="notice bad"><b>השרת לא עודכן לגרסה האחרונה' + (v ? ' (כרגע פועלת גרסה ' + NV.esc(v) + ')' : '') + '.</b> ' +
+      'חלק מהפעולות לא יעבדו. בעורך הסקריפטים: פריסה ← ניהול פריסות ← סמל העיפרון ← גרסה חדשה ← פריסה.</div>';
+    $('serverWarn').hidden = false;
+  }
+
   function call(action, data) {
     return NV.api(action, Object.assign({ session: session }, data || {})).then(function (r) {
+      checkServer(r);
       if (!r.ok && r.code === 'AUTH') {
         logout();
         throw new Error(r.error);
@@ -396,6 +459,7 @@
     var btn = $('loginBtn');
     btn.disabled = true;
     NV.api('adminLogin', { password: $('password').value, device: NV.deviceId() }).then(function (r) {
+      checkServer(r);
       btn.disabled = false;
       if (!r.ok) { notice('loginNotice', 'bad', r.error); return; }
       session = r.session;
@@ -549,6 +613,15 @@
     call('eventDetail', { id: current.id }).then(function (r) {
       if (!r.ok) { NV.toast(r.error); return; }
       if ($('detailView').hidden) return;
+      r.people = (r.people || []).map(function (p) {
+        p.flags = p.flags || [];
+        p.manual = p.manual || [];
+        return p;
+      });
+      r.attempts = r.attempts || [];
+      r.rejections = r.rejections || [];
+      r.messages = r.messages || [];
+      r.counts = r.counts || {};
       detail = r;
       current = r.event;
       if (r.role) setRole(r.role, r.roleName);
@@ -612,7 +685,64 @@
     }
     renderPeople();
     renderControl();
+    renderComms(ev);
   }
+
+  // ===== תקשורת =====
+  var grpLoadedFor = '';
+  function renderComms(ev) {
+    var list = detail.messages || [];
+    $('msgList').innerHTML = list.length ? list.map(function (m) {
+      return '<div class="msg-item' + (m.urgent ? ' urgent' : '') + '"><span class="t">' + NV.esc(NV.fmtTime(m.at)) + '</span>' +
+        '<span class="x">' + (m.urgent ? '<b>דחוף: </b>' : '') + NV.esc(m.text) + '</span>' +
+        '<button class="icon-btn" type="button" data-delmsg="' + NV.esc(m.id) + '">מחיקה</button></div>';
+    }).join('') : '<p class="muted small">עדיין לא פורסמו הודעות באירוע.</p>';
+    $('msgList').querySelectorAll('[data-delmsg]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!confirm('למחוק את ההודעה? היא תיעלם מהדף של כל השוטרים.')) return;
+        call('deleteMessage', { id: current.id, msgId: b.dataset.delmsg }).then(function (r) {
+          NV.toast(r.ok ? 'ההודעה נמחקה' : r.error);
+          if (r.ok) { detail.messages = r.messages; renderComms(ev); }
+        });
+      });
+    });
+    if (grpLoadedFor !== ev.id) {
+      grpLoadedFor = ev.id;
+      $('grpLink').value = ev.groupLink || '';
+      document.querySelectorAll('input[name=grpWhen]').forEach(function (r) { r.checked = r.value === (ev.groupWhen || 'registered'); });
+    }
+    $('grpTest').href = ev.groupLink || '#';
+    $('grpTest').style.opacity = ev.groupLink ? '1' : '.4';
+  }
+
+  $('msgText').addEventListener('input', function () { $('msgCount').textContent = $('msgText').value.length + '/400'; });
+  $('msgSend').addEventListener('click', function () {
+    var text = $('msgText').value.trim();
+    if (!text) { NV.toast('יש לכתוב את תוכן ההודעה'); return; }
+    var urgent = $('msgUrgent').checked;
+    if (!confirm('לפרסם את ההודעה לכל השוטרים הרשומים לאירוע?')) return;
+    $('msgSend').disabled = true;
+    call('postMessage', { id: current.id, text: text, urgent: urgent }).then(function (r) {
+      $('msgSend').disabled = false;
+      if (!r.ok) { NV.toast(r.error); return; }
+      $('msgText').value = '';
+      $('msgUrgent').checked = false;
+      $('msgCount').textContent = '0/400';
+      detail.messages = r.messages;
+      renderComms(detail.event);
+      NV.toast('ההודעה פורסמה');
+    }).catch(function (err) { $('msgSend').disabled = false; NV.toast(err.message); });
+  });
+  $('grpSave').addEventListener('click', function () {
+    var w = document.querySelector('input[name=grpWhen]:checked');
+    call('setGroupLink', { id: current.id, link: $('grpLink').value.trim(), when: w ? w.value : 'registered' }).then(function (r) {
+      if (!r.ok) { notice('grpNotice', 'bad', r.error); return; }
+      notice('grpNotice', 'ok', r.event.groupLink ? 'הקישור נשמר.' : 'הקישור הוסר.');
+      detail.event = r.event;
+      current = r.event;
+      renderComms(r.event);
+    });
+  });
 
   function telLink(p) {
     return p.tel ? '<a class="icon-btn" href="tel:' + NV.esc(p.tel) + '" title="התקשרות">' + ICON.call + ' התקשרות</a>' : '';
