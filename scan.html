@@ -257,7 +257,8 @@
     $('tOut').textContent = me.outAt ? NV.fmtTime(me.outAt) : '—';
     $('pnTag').innerHTML = me.pn ? 'מספר אישי <bdi dir="ltr">' + NV.esc(me.pn) + '</bdi>' : '';
     var flags = (me.inFlags || []).concat(me.outFlags || []);
-    $('myFlags').innerHTML = flags.map(function (f) { return '<li class="chip warn">' + NV.esc(f) + '</li>'; }).join('');
+    $('myFlags').innerHTML = flags.map(function (f) { return '<li class="chip warn">' + NV.esc(f) + '</li>'; }).join('') +
+      (me.manual || []).map(function (m) { return '<li class="chip">' + NV.esc(m) + '</li>'; }).join('');
 
     var btn = $('scanBtn');
     var icon = $('stateIcon');
