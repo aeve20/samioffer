@@ -119,11 +119,14 @@ bdi { unicode-bidi: isolate; }
 .hero.wide .hero-inner { max-width: 1180px; }
 .hero .emblem-badge { width: 88px; height: 88px; animation: badgeIn .9s var(--ease-pop) both .1s; }
 .hero-kicker { margin: 0 0 2px; color: var(--gold-2); font-size: 15px; font-weight: 500; letter-spacing: .2px; animation: rise .6s ease-out both .25s; }
-.hero-title { margin: 0; font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1.1; text-shadow: 0 2px 18px rgba(0, 0, 0, .45); animation: rise .6s ease-out both .35s; }
+.hero-title { margin: 0; font-family: var(--display); font-weight: 900; font-size: 46px; line-height: 1; letter-spacing: 1px; text-shadow: 0 2px 18px rgba(0, 0, 0, .45); animation: rise .6s ease-out both .35s; }
+.hero-sub { margin: 4px 0 0; color: var(--gold-2); font-size: 15px; font-weight: 700; letter-spacing: .3px; animation: rise .6s ease-out both .45s; }
+.hero-page { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--cream); background: rgba(244, 239, 226, .12); border: 1px solid rgba(244, 239, 226, .28); border-radius: 999px; padding: 2px 12px; backdrop-filter: blur(4px); animation: rise .6s ease-out both .55s; }
 .hero-tag { position: absolute; top: 14px; left: 16px; z-index: 2; font-size: 13px; color: var(--gold-2); background: rgba(4, 23, 15, .55); border: 1px solid rgba(233, 200, 99, .45); border-radius: 999px; padding: 3px 12px; backdrop-filter: blur(6px); }
 .hero.compact { min-height: 150px; }
 .hero.compact .emblem-badge { width: 64px; height: 64px; }
-.hero.compact .hero-title { font-size: 26px; }
+.hero.compact .hero-title { font-size: 36px; }
+.hero.compact .hero-page { margin-top: 6px; }
 
 .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px 48px; }
 .wrap.wide { max-width: 1180px; }
@@ -255,6 +258,8 @@ textarea { min-height: 140px; resize: vertical; font-size: 16px; }
 .steps { margin: 10px 0 0; padding: 0 20px 0 0; }
 .steps li { margin: 6px 0; }
 
+.credit { display: flex; flex-direction: column; align-items: center; gap: 1px; margin: 30px auto 6px; padding-top: 14px; border-top: 1px solid rgba(212, 167, 44, .35); width: min(260px, 80%); text-align: center; font-size: 12px; color: var(--muted); opacity: .85; user-select: none; }
+.credit-en { font-size: 11px; font-weight: 700; letter-spacing: 1.6px; color: var(--gold-dark); }
 .footer-note { text-align: center; color: var(--muted); font-size: 13px; margin-top: 24px; }
 
 /* ===== אנימציות כניסה ===== */
@@ -286,6 +291,6 @@ textarea { min-height: 140px; resize: vertical; font-size: 16px; }
 @media (max-width: 420px) {
   h1 { font-size: 26px; }
   .card { padding: 16px; }
-  .hero-title { font-size: 28px; }
+  .hero-title { font-size: 40px; }
   .hero .emblem-badge { width: 74px; height: 74px; }
 }

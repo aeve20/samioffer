@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#072A1C">
 <meta name="robots" content="noindex, nofollow">
-<title>מסך נוכחות</title>
+<title>סמ״י — מסך נוכחות</title>
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +22,11 @@
   .side { display: flex; flex-direction: column; gap: 2.4vmin; min-width: 0; }
   .brand-line { display: flex; align-items: center; gap: 2vmin; color: var(--gold-2); font-size: 2.8vmin; font-weight: 700; animation: rise .6s ease-out both; }
   .brand-line .emblem-badge { width: 11vmin; height: 11vmin; animation: badgeIn .9s var(--ease-pop) both; }
+  .dl { display: flex; flex-direction: column; line-height: 1.1; }
+  .dl b { font-family: var(--display); font-weight: 900; font-size: 5.2vmin; color: var(--cream); letter-spacing: .3vmin; }
+  .dl small { font-size: 2.2vmin; color: var(--gold-2); font-weight: 700; }
+  .display-credit { position: fixed; bottom: 1.6vmin; right: 2.4vmin; margin: 0; z-index: 2; font-size: 1.5vmin; color: rgba(244, 239, 226, .55); }
+  .display-credit .credit-en { font-size: 1.4vmin; color: var(--gold-2); }
   .ev-name { animation: rise .6s ease-out both .15s; font-family: var(--display); font-weight: 900; font-size: 6.2vmin; line-height: 1.12; margin: 0; }
   .mode { align-self: flex-start; font-size: 4.2vmin; font-weight: 600; padding: 1.2vmin 3.2vmin; border-radius: 999px; background: #12804A; color: #fff; box-shadow: 0 0 0 0.5vmin rgba(255, 255, 255, .12); animation: popIn .6s var(--ease-pop) both .3s; }
   .mode.exit { background: linear-gradient(180deg, var(--gold-2), var(--gold)); color: var(--green-950); }
@@ -57,7 +62,7 @@
 
 <div class="screen" id="screen" hidden>
   <div class="side">
-    <div class="brand-line"><span class="emblem-badge"><img src="emblem-256.webp" alt="סמל מרחב כרמל"></span><span>מרחב כרמל · מערכת נוכחות</span></div>
+    <div class="brand-line"><span class="emblem-badge"><img src="emblem-256.webp" alt="סמל מרחב כרמל"></span><span class="dl"><b>סמ״י</b><small>סד״כ מבצעי ייעודי · מרחב כרמל</small></span></div>
     <h1 class="ev-name" id="evName"></h1>
     <div class="mode" id="mode">סריקת הגעה</div>
     <ol class="steps-big">
@@ -79,6 +84,10 @@
 </div>
 
 <div class="err-banner" id="errBanner" hidden>אין חיבור לשרת — הקוד ממשיך להתחלף, מנסה להתחבר מחדש</div>
+<div class="credit display-credit">
+  <span>אפליקציה פותחה על ידי</span>
+  <span class="credit-en" dir="ltr">Powered by Avshalom Even</span>
+</div>
 <div class="tools"><button class="btn sm ghost light" id="fsBtn" type="button">מסך מלא</button></div>
 
 <script src="config.js"></script>
@@ -115,7 +124,7 @@
       windowMs = r.windowSec * 1000;
       tokens = r.tokens;
       $('evName').textContent = r.event.name;
-      document.title = 'מסך נוכחות — ' + r.event.name;
+      document.title = 'סמ״י — ' + r.event.name;
       var m = $('mode');
       m.textContent = r.event.exitOpen ? 'סריקת יציאה פתוחה' : 'סריקת הגעה';
       m.classList.toggle('exit', r.event.exitOpen);

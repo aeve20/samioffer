@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#072A1C">
 <meta name="robots" content="noindex, nofollow">
-<title>ניהול נוכחות</title>
+<title>סמ״י — ניהול</title>
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +17,11 @@
   .login-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(4, 23, 15, .35), rgba(4, 23, 15, .9) 75%); }
   body.login-mode main { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; padding-top: 70px; }
   .login-card { width: min(420px, 100%); margin: 0 auto; padding: 72px 26px 26px; position: relative; overflow: visible; background: rgba(255, 253, 247, .96); border-top: 4px solid var(--gold); box-shadow: var(--shadow-lg); }
+  .sami-title { font-size: 46px; margin: 0; line-height: 1; letter-spacing: 1px; color: var(--green-900); }
+  .sami-sub { margin: 4px 0 6px; color: var(--gold-dark); font-weight: 700; font-size: 15px; letter-spacing: .3px; }
+  body.login-mode main { grid-template-rows: 1fr auto; }
+  body.login-mode .credit { color: rgba(244, 239, 226, .75); }
+  body.login-mode .credit-en { color: var(--gold-2); }
   .login-emblem { position: absolute; top: -62px; left: 50%; margin-left: -62px; width: 124px; height: 124px; animation: badgeIn .9s var(--ease-pop) both .15s; }
   .tiles > .tile, .grid > .ev-card { animation: popIn .6s var(--ease-pop) both; }
   .tiles > :nth-child(2), .grid > :nth-child(2) { animation-delay: .06s; }
@@ -109,7 +114,7 @@
 <div class="login-bg" id="loginBg" aria-hidden="true"><img src="stadium-1920.webp" alt=""></div>
 <header class="topbar" id="topbar" hidden>
   <div class="emblem-badge"><img src="emblem-256.webp" alt="סמל מרחב כרמל"></div>
-  <div class="brand"><b>ניהול נוכחות</b><small>מרחב כרמל</small></div>
+  <div class="brand"><b>סמ״י</b><small>סד״כ מבצעי ייעודי · ניהול נוכחות</small></div>
   <span class="role-chip" id="roleChip" hidden></span>
   <span class="spacer"></span>
   <nav class="tabs" id="tabs" hidden>
@@ -126,7 +131,8 @@
   <form id="loginView" class="card login-card" novalidate>
     <div class="emblem-badge login-emblem"><img src="emblem-512.webp" alt="סמל מרחב כרמל"></div>
     <p class="eyebrow center">מרחב כרמל · כניסת מנהל</p>
-    <h2 class="center">ניהול מערכת הנוכחות</h2>
+    <h2 class="center sami-title">סמ״י</h2>
+    <p class="center sami-sub">סד״כ מבצעי ייעודי</p>
     <label for="password">סיסמה</label>
     <div class="field-hint" style="margin:-2px 0 8px">מנהל העל ומנהל הביניים נכנסים כל אחד עם הסיסמה של הרובד שלו</div>
     <input id="password" class="ltr" type="password" autocomplete="current-password">
@@ -306,6 +312,10 @@
       </div>
     </div>
   </section>
+  <div class="credit">
+  <span>אפליקציה פותחה על ידי</span>
+  <span class="credit-en" dir="ltr">Powered by Avshalom Even</span>
+</div>
 </main>
 
 <div id="modalRoot"></div>
