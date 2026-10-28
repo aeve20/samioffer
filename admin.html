@@ -40,6 +40,20 @@
   .icon-btn svg { width: 16px; height: 16px; }
   .icon-btn.warn { color: var(--warn); }
   .chip.manual { background: #E4ECF7; color: #1D3F73; }
+  .chip.watch { background: #F7E2D2; color: #7A3410; font-weight: 700; }
+  tr.watch-row td:first-child { box-shadow: inset -4px 0 0 #B4541A; }
+  .watch-banner { display: flex; gap: 12px; align-items: center; background: #FBEDE2; border: 1px solid #E9B996; color: #6A2D0C; border-radius: 14px; padding: 12px 16px; margin: 0 0 14px; }
+  .watch-banner b { font-size: 17px; }
+  .watch-banner .btn { margin-inline-start: auto; }
+  .rules { margin: 6px 0 0; padding-inline-start: 20px; line-height: 1.7; }
+  .rules li { margin: 4px 0; }
+  .table-scroll.wt table { min-width: 760px; }
+  .table-scroll.wt td:nth-child(7) { min-width: 0; }
+  .hist .chip { white-space: normal; }
+  .hist { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .clean-dots { display: inline-flex; gap: 5px; vertical-align: middle; margin-inline-start: 6px; }
+  .clean-dots i { width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+  .clean-dots i.on { background: var(--green-700); }
   .modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(4, 23, 15, .55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 16px; animation: rise .2s ease-out both; }
   .modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; margin: 0; border-top: 4px solid var(--gold); animation: popIn .45s var(--ease-pop) both; }
   .modal h2 { margin-top: 0; }
@@ -136,6 +150,7 @@
   <nav class="tabs" id="tabs" hidden>
     <button class="tab active" data-view="events" type="button">אירועים</button>
     <button class="tab" data-view="whitelist" type="button">רשימת מאושרים</button>
+    <button class="tab" data-view="watch" type="button">בקרה מוגברת</button>
     <button class="tab" data-view="settings" type="button">נוסח פנייה</button>
     <button class="tab" id="logout" type="button">התנתקות</button>
   </nav>
@@ -221,6 +236,7 @@
       </div>
     </div>
 
+    <div id="watchBanner"></div>
     <div class="tiles">
       <div class="tile accent"><div class="v" id="tReg"></div><div class="l">רשומים מתוך המכסה</div><div class="progress"><i id="tRegBar"></i></div></div>
       <div class="tile"><div class="v" id="tArrived">0</div><div class="l">הגיעו</div></div>
@@ -308,6 +324,7 @@
         <button class="filter" data-f="out" type="button">יצאו</button>
         <button class="filter" data-f="flags" type="button">חריגות</button>
         <button class="filter" data-f="manual" type="button">רישום ידני</button>
+        <button class="filter" data-f="watch" type="button">בקרה מוגברת</button>
       </div>
       <div class="table-scroll">
         <table>
@@ -346,6 +363,43 @@
       </div>
     </div>
   </section>
+  <!-- בקרה מוגברת -->
+  <section id="watchView" hidden>
+    <div class="page-head"><div><p class="eyebrow">פיקוח</p><h1>בקרה מוגברת</h1></div></div>
+    <div class="two">
+      <div class="card">
+        <h3>איך זה עובד</h3>
+        <ul class="rules" id="watchRules"></ul>
+      </div>
+      <div class="card">
+        <h3>הוספה ידנית</h3>
+        <label for="wPn">מספר אישי</label>
+        <input id="wPn" class="ltr" type="text" inputmode="numeric" maxlength="12">
+        <label for="wReason">סיבה</label>
+        <input id="wReason" type="text" maxlength="160" placeholder="לדוגמה: דיווח של מפקד הגזרה">
+        <div id="wNotice"></div>
+        <div class="btn-row"><button class="btn gold" id="wAdd" type="button">הוספה לבקרה</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>שוטרים בבקרה מוגברת <span class="chip watch" id="wCount"></span></h3>
+      <div class="table-scroll wt">
+        <table>
+          <thead><tr><th>מספר אישי</th><th>בבקרה מאז</th><th>מקור</th><th>סיבה והיסטוריה</th><th>אירועים נקיים</th><th>פעולות</th></tr></thead>
+          <tbody id="wActive"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>הוסרו לאחרונה</h3>
+      <div class="table-scroll wt">
+        <table>
+          <thead><tr><th>מספר אישי</th><th>בבקרה מאז</th><th>הוסר ב</th><th>סיבה</th><th>על ידי</th></tr></thead>
+          <tbody id="wRemoved"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
   <!-- נוסח פנייה לשוטר -->
   <section id="settingsView" hidden>
     <div class="page-head"><div><p class="eyebrow">פנייה לשוטרים</p><h1>נוסח המייל לשוטר שסומן</h1></div></div>
@@ -378,7 +432,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var views = ['loginView', 'eventsView', 'formView', 'detailView', 'whitelistView', 'settingsView'];
+  var views = ['loginView', 'eventsView', 'formView', 'detailView', 'whitelistView', 'settingsView', 'watchView'];
   var session = '';
   var role = '';
   try { session = sessionStorage.getItem('nv_admin') || ''; role = sessionStorage.getItem('nv_role') || ''; } catch (e) { }
@@ -411,7 +465,7 @@
     $('loginBg').hidden = !login;
     document.body.classList.toggle('login-mode', login);
     $('roleChip').hidden = login || !role;
-    var tabFor = { whitelistView: 'whitelist', settingsView: 'settings' }[name] || 'events';
+    var tabFor = { whitelistView: 'whitelist', settingsView: 'settings', watchView: 'watch' }[name] || 'events';
     document.querySelectorAll('.tab[data-view]').forEach(function (t) {
       t.classList.toggle('active', t.dataset.view === tabFor);
     });
@@ -420,7 +474,7 @@
     window.scrollTo(0, 0);
   }
 
-  var EXPECTED_SERVER = '1.4';
+  var EXPECTED_SERVER = '1.5';
   function checkServer(r) {
     var v = r && r.v ? String(r.v) : '';
     var num = function (x) { var q = String(x).split('.'); return (parseInt(q[0], 10) || 0) * 1000 + (parseInt(q[1], 10) || 0); };
@@ -476,6 +530,7 @@
     t.addEventListener('click', function () {
       if (t.dataset.view === 'whitelist') loadWhitelist();
       else if (t.dataset.view === 'settings') loadSettings();
+      else if (t.dataset.view === 'watch') loadWatch();
       else loadEvents();
     });
   });
@@ -512,7 +567,8 @@
           '<div class="muted small">' + c.registered + ' רשומים מתוך ' + ev.quota + ' · ' + c.arrived + ' הגיעו · ' + c.exited + ' יצאו</div>' +
           '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
           '<div class="chips">' + regStateChip(ev, c) + (ev.exitOpen ? '<span class="chip gold">יציאה פתוחה</span>' : '') +
-          (c.flagged ? '<span class="chip warn">' + c.flagged + ' חריגות</span>' : '') + '</div></article>';
+          (c.flagged ? '<span class="chip warn">' + c.flagged + ' חריגות</span>' : '') +
+          (c.watched ? '<span class="chip watch">' + c.watched + ' בבקרה מוגברת</span>' : '') + '</div></article>';
       }).join('');
       document.querySelectorAll('.ev-card').forEach(function (el) {
         el.addEventListener('click', function () { openEvent(el.dataset.id); });
@@ -644,6 +700,14 @@
     $('dTime').textContent = 'שעות ' + NV.timeRange(ev.start, ev.end);
     $('dChips').innerHTML = regStateChip(ev, c) + (ev.exitOpen ? '<span class="chip gold">יציאה פתוחה מ-' + NV.esc(NV.fmtTime(ev.exitAt)) + '</span>' : '') +
       '<span class="chip">רדיוס ' + ev.radius + ' מטר</span>';
+    var wc = detail.watchCount || 0;
+    $('watchBanner').innerHTML = wc ? '<div class="watch-banner"><span><b>' + (wc === 1 ? 'שוטר אחד בבקרה מוגברת רשום' : wc + ' שוטרים בבקרה מוגברת רשומים') + ' לאירוע.</b> מומלץ להציב ' + (wc === 1 ? 'אותו' : 'אותם') + ' בעמדה עם פיקוח הדוק.</span><button class="btn sm ghost" type="button" id="watchShow">הצגה</button></div>' : '';
+    if (wc) $('watchShow').addEventListener('click', function () {
+      filter = 'watch';
+      document.querySelectorAll('#filters .filter').forEach(function (x) { x.classList.toggle('active', x.dataset.f === 'watch'); });
+      renderPeople();
+      $('people').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
     $('tReg').innerHTML = c.registered + ' <small>/ ' + ev.quota + '</small>';
     $('tRegBar').style.width = Math.min(100, Math.round(100 * c.registered / Math.max(1, ev.quota))) + '%';
     $('tArrived').textContent = c.arrived;
@@ -760,6 +824,7 @@
       if (filter === 'out') return !!p.outAt;
       if (filter === 'flags') return p.flags.length > 0;
       if (filter === 'manual') return p.manual.length > 0 || p.source === 'רישום ידני';
+      if (filter === 'watch') return !!p.watch;
       return true;
     });
     if (!list.length) {
@@ -768,7 +833,8 @@
     }
     $('people').innerHTML = list.map(function (p) {
       var status = p.outAt ? '<span class="chip">יצא</span>' : p.inAt ? '<span class="chip ok">נמצא</span>' : '';
-      var notes = p.flags.map(function (f) { return '<span class="chip warn" style="margin:2px">' + NV.esc(f) + '</span>'; }).join('') +
+      var notes = (p.watch ? '<span class="chip watch" style="margin:2px" title="' + NV.esc(p.watch.reason) + '">בקרה מוגברת</span>' : '') +
+        p.flags.map(function (f) { return '<span class="chip warn" style="margin:2px">' + NV.esc(f) + '</span>'; }).join('') +
         p.manual.map(function (m) { return '<span class="chip manual" style="margin:2px">' + NV.esc(m) + '</span>'; }).join('') +
         (p.source === 'רישום ידני' ? '<span class="chip manual" style="margin:2px">נוסף ידנית: ' + NV.esc(p.regNote) + '</span>' : '') +
         (p.contact ? '<span class="chip" style="margin:2px">נשלח מייל ' + NV.esc(NV.fmtTime(p.contact.at)) + '</span>' : '');
@@ -778,7 +844,7 @@
       acts += telLink(p);
       if (p.flags.length) acts += mailBtn(p);
       acts += '<button class="icon-btn" type="button" data-cancel="' + NV.esc(p.pn) + '">ביטול</button>';
-      return '<tr>' +
+      return '<tr' + (p.watch ? ' class="watch-row"' : '') + '>' +
         '<td class="num ltr"><b>' + NV.esc(p.pn) + '</b></td>' +
         '<td class="num ltr">' + NV.esc(p.phone) + '</td>' +
         '<td class="ltr small">' + NV.esc(p.email) + '</td>' +
@@ -1004,11 +1070,11 @@
   $('exportBtn').addEventListener('click', function () {
     call('exportEvent', { id: current.id }).then(function (r) {
       if (!r.ok) { NV.toast(r.error); return; }
-      var head = ['מספר אישי', 'טלפון', 'דואר אלקטרוני', 'זמן הרשמה', 'מקור הרשמה', 'שעת הגעה', 'שעת יציאה', 'משך נוכחות', 'חריגות', 'רישום ידני'];
+      var head = ['מספר אישי', 'טלפון', 'דואר אלקטרוני', 'זמן הרשמה', 'מקור הרשמה', 'שעת הגעה', 'שעת יציאה', 'משך נוכחות', 'חריגות', 'רישום ידני', 'בקרה מוגברת'];
       var asText = function (v) { return '="' + String(v).replace(/"/g, '') + '"'; };
       var cell = function (v) { v = String(v === undefined ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
       var lines = [head.join(',')].concat(r.rows.map(function (x) {
-        return [asText(x.pn), x.phone ? asText(x.phone) : '', cell(x.email), cell(NV.fmtDateTime(x.regAt)), cell(x.source), cell(NV.fmtTime(x.inAt)), cell(NV.fmtTime(x.outAt)), cell(NV.duration(x.inAt, x.outAt)), cell(x.flags), cell(x.manual)].join(',');
+        return [asText(x.pn), x.phone ? asText(x.phone) : '', cell(x.email), cell(NV.fmtDateTime(x.regAt)), cell(x.source), cell(NV.fmtTime(x.inAt)), cell(NV.fmtTime(x.outAt)), cell(NV.duration(x.inAt, x.outAt)), cell(x.flags), cell(x.manual), cell(x.watch || '')].join(',');
       }));
       var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
       var a = document.createElement('a');
@@ -1047,6 +1113,95 @@
   $('wlReplace').addEventListener('click', function () { saveWl('replace'); });
   $('wlAdd').addEventListener('click', function () { saveWl('add'); });
   $('wlClear').addEventListener('click', function () { saveWl('clear'); });
+
+  // ===== בקרה מוגברת =====
+  function loadWatch() {
+    view('watchView');
+    notice('wNotice');
+    $('wActive').innerHTML = '<tr><td colspan="6" class="center"><span class="spinner"></span></td></tr>';
+    call('getWatch').then(function (r) {
+      if (!r.ok) { $('wActive').innerHTML = '<tr><td colspan="6"><div class="notice bad">' + NV.esc(r.error) + '</div></td></tr>'; return; }
+      setRole(r.role, r.roleName);
+      renderWatch(r);
+    }).catch(function (err) { $('wActive').innerHTML = '<tr><td colspan="6"><div class="notice bad">' + NV.esc(err.message) + '</div></td></tr>'; });
+  }
+
+  function renderWatch(r) {
+    var rl = r.rules;
+    $('watchRules').innerHTML = [
+      'שוטר נכנס אוטומטית אחרי חריגה ב-' + rl.strikes + ' אירועים שונים: סריקה במרחק של יותר מ-' + rl.far.toLocaleString('he-IL') + ' מטר ממרכז המתחם, או סריקה ממכשיר ששימש גם לשוטר אחר.',
+      'כל אירוע נספר פעם אחת, גם אם היו בו כמה סריקות חריגות.',
+      'השוטר יוצא אוטומטית אחרי ' + rl.clean + ' אירועים ברצף שבהם הגיע ויצא בסריקה, בלי חריגה. חריגה חדשה מאפסת את הספירה, ורישום ידני לא נספר.',
+      'השוטר עצמו לא רואה שהוא בבקרה. הסימון מופיע רק למנהלים: בכרטיס האירוע, בטבלת הנרשמים ובדוח.',
+      'הסרה ידנית, למשל בתום לב או בבעיית איכון, מותרת למנהל העל בלבד ונרשמת ביומן.'
+    ].map(function (t) { return '<li>' + NV.esc(t) + '</li>'; }).join('');
+    $('wCount').textContent = r.active.length;
+    $('wCount').hidden = !r.active.length;
+    $('wActive').innerHTML = r.active.length ? r.active.map(function (w) {
+      var hist = w.history.filter(function (h) { return h.kind === 'חריגה' || h.kind === 'אירוע נקי'; }).map(function (h) {
+        var where = h.event ? h.event + (h.date ? ', ' + NV.fmtDate(h.date) : '') : NV.fmtDateTime(h.at);
+        return '<span class="chip ' + (h.kind === 'חריגה' ? 'warn' : 'ok') + '" title="' + NV.esc(h.detail) + '">' + NV.esc(h.kind) + ' · ' + NV.esc(where) + '</span>';
+      }).join('');
+      var dots = '';
+      for (var i = 0; i < w.need; i++) dots += '<i class="' + (i < w.clean ? 'on' : '') + '"></i>';
+      return '<tr class="watch-row">' +
+        '<td class="num ltr"><b>' + NV.esc(w.pn) + '</b></td>' +
+        '<td class="num small">' + NV.esc(NV.fmtDateTime(w.since)) + '</td>' +
+        '<td><span class="chip ' + (w.src === 'ידני' ? 'manual' : '') + '">' + NV.esc(w.src) + '</span></td>' +
+        '<td><div class="small">' + NV.esc(w.reason) + (w.src === 'ידני' && w.by ? ' <span class="muted">(' + NV.esc(w.by) + ')</span>' : '') + '</div>' + (hist ? '<div class="hist">' + hist + '</div>' : '') + '</td>' +
+        '<td class="num"><b>' + w.clean + '</b> מתוך ' + w.need + '<span class="clean-dots">' + dots + '</span></td>' +
+        '<td>' + (isSuper() ? '<button class="icon-btn" type="button" data-unwatch="' + NV.esc(w.pn) + '">הסרה</button>' : '<span class="muted small">הסרה: מנהל על</span>') + '</td>' +
+        '</tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">אין כרגע שוטרים בבקרה מוגברת.</td></tr>';
+    $('wRemoved').innerHTML = r.removed.length ? r.removed.map(function (w) {
+      return '<tr><td class="num ltr">' + NV.esc(w.pn) + '</td><td class="num small">' + NV.esc(NV.fmtDateTime(w.since)) + '</td><td class="num small">' + NV.esc(NV.fmtDateTime(w.removedAt)) + '</td><td class="small">' + NV.esc(w.why) + '</td><td class="small muted">' + NV.esc(w.by) + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="empty">עדיין לא הוסרו שוטרים.</td></tr>';
+    document.querySelectorAll('[data-unwatch]').forEach(function (b) {
+      b.addEventListener('click', function () { openUnwatch(b.dataset.unwatch); });
+    });
+  }
+
+  function openUnwatch(pn) {
+    var reasons = ['תום לב', 'בעיית איכון', 'הוכיח את עצמו', 'אחר'];
+    openModal(
+      '<p class="eyebrow">בקרה מוגברת</p><h2>הסרה מהרשימה</h2>' +
+      '<p class="muted" style="margin:0">מספר אישי <b class="ltr">' + NV.esc(pn) + '</b>. ההסרה תירשם ביומן הניהול.</p>' +
+      '<label>סיבת ההסרה</label><div class="radio-row">' + reasons.map(function (x, i) {
+        return '<label><input type="radio" name="reason" value="' + NV.esc(x) + '"' + (i === 0 ? ' checked' : '') + '> ' + NV.esc(x) + '</label>';
+      }).join('') + '</div>' +
+      '<label for="mNote">פירוט <span class="muted small">(חובה כשנבחר "אחר")</span></label><input id="mNote" type="text" maxlength="120">',
+      function () {
+        var rr = readReason();
+        var note = rr.note.trim();
+        if (rr.reason === 'אחר' && !note) { modalError('יש לפרט את הסיבה'); return; }
+        var reason = rr.reason === 'אחר' ? note : rr.reason + (note ? ' — ' + note : '');
+        $('modalOk').disabled = true;
+        call('watchRemove', { pn: pn, reason: reason }).then(function (r) {
+          $('modalOk').disabled = false;
+          if (!r.ok) { modalError(r.error); return; }
+          closeModal();
+          NV.toast('השוטר הוסר מהבקרה המוגברת');
+          loadWatch();
+        }).catch(function (err) { $('modalOk').disabled = false; modalError(err.message); });
+      }
+    );
+  }
+
+  $('wAdd').addEventListener('click', function () {
+    var pn = $('wPn').value.replace(/[\s-]/g, '');
+    var reason = $('wReason').value.trim();
+    if (!/^\d{5,10}$/.test(pn)) { notice('wNotice', 'bad', 'יש להזין מספר אישי, ספרות בלבד'); return; }
+    if (!reason) { notice('wNotice', 'bad', 'יש לכתוב את הסיבה להוספה'); return; }
+    $('wAdd').disabled = true;
+    call('watchAdd', { pn: pn, reason: reason }).then(function (r) {
+      $('wAdd').disabled = false;
+      if (!r.ok) { notice('wNotice', 'bad', r.error); return; }
+      $('wPn').value = '';
+      $('wReason').value = '';
+      NV.toast('השוטר נוסף לבקרה המוגברת');
+      loadWatch();
+    }).catch(function (err) { $('wAdd').disabled = false; notice('wNotice', 'bad', err.message); });
+  });
 
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && !$('detailView').hidden) refreshDetail(false);
