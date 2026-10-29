@@ -428,7 +428,7 @@
       return flush();
     }).catch(function (err) {
       flushing = false;
-      if (err && err.network) setOnline(false);
+      if (err && err.network && !err.busy) setOnline(false);
       var list = queue();
       list.forEach(function (x) { if (x.scanId === item.scanId) x.tries = (x.tries || 0) + 1; });
       saveQueue(list);
@@ -456,11 +456,18 @@
     loadStatus(false);
   }
 
+  // המתנה גדלה והולכת עם פיזור אקראי, כדי שמאות טלפונים לא ינסו שוב באותה שנייה
+  function retryDelay() {
+    var first = queue()[0] || {};
+    var base = Math.min(30000, 2000 * Math.pow(1.6, first.tries || 0));
+    return Math.round(base * (0.6 + Math.random() * 0.8));
+  }
+
   var retryTimer = null;
   function scheduleFlush(ms) {
     clearTimeout(retryTimer);
     retryTimer = setTimeout(function () {
-      flush().then(renderPending, function () { renderPending(); if (queue().length) scheduleFlush(5000); });
+      flush().then(renderPending, function () { renderPending(); if (queue().length) scheduleFlush(retryDelay()); });
     }, ms);
   }
   window.addEventListener('online', function () { scheduleFlush(300); });
@@ -594,11 +601,11 @@
         if (!stillQueued || $('result').dataset.scanId !== scanId) return;
         showResult('warn', {
           title: 'הסריקה נשמרה במכשיר',
-          sub: 'אין כרגע חיבור לשרת. הסריקה תישלח אוטומטית ברגע שהחיבור יחזור — אין צורך לסרוק שוב.',
+          sub: 'אין כרגע חיבור לשרת, או שהשרת עמוס. הסריקה תישלח אוטומטית בעוד כמה שניות — אין צורך לסרוק שוב.',
           button: 'סגירה', scanId: scanId
         });
         render();
-        scheduleFlush(4000);
+        scheduleFlush(retryDelay());
       };
       setTimeout(savedNotice, 25000);
       return flush().catch(savedNotice);

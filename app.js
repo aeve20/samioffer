@@ -34,7 +34,13 @@
         e.network = true;
         throw e;
       }
-      return res.json();
+      return res.json().catch(function () {
+        // תשובה שאינה תקינה מגוגל, למשל בעומס של הרצות במקביל. נחשבת לתקלה זמנית שמנסים שוב
+        var e = new Error('השרת עמוס כרגע');
+        e.network = true;
+        e.busy = true;
+        throw e;
+      });
     }, function () {
       var e = new Error('אין חיבור לשרת');
       e.network = true;

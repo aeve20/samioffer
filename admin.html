@@ -232,7 +232,7 @@
       </div>
       <div class="btn-row" style="margin:0">
         <button class="btn ghost" id="editBtn" type="button">עריכת אירוע</button>
-        <button class="btn ghost" id="exportBtn" type="button">ייצוא דוח</button>
+        <button class="btn ghost" id="exportBtn" type="button">ייצוא לאקסל</button>
       </div>
     </div>
 
@@ -267,7 +267,8 @@
         <h3>מסך הקוד המתחלף</h3>
         <p class="muted small" style="margin:0">פתח את הקישור בטאבלט או במחשב שמחובר למסך בנקודת הריכוז. הקוד מתחלף כל 15 שניות.</p>
         <div class="link-box"><code id="dispLink"></code><button class="btn sm ghost" id="copyDisp" type="button">העתקה</button></div>
-        <div class="btn-row"><a class="btn sm" id="openDisp" href="#" target="_blank" rel="noopener">פתיחת מסך התצוגה</a></div>
+        <p class="field-hint" style="margin:6px 0 0">הקישור מיועד רק לטאבלט או למסך בנקודת הריכוז. אין לשלוח אותו לשוטרים. אם הוא דלף, החלף אותו.</p>
+        <div class="btn-row"><a class="btn sm" id="openDisp" href="#" target="_blank" rel="noopener">פתיחת מסך התצוגה</a><button class="btn sm ghost" id="rotateDisp" type="button">החלפת קישור</button></div>
         <div class="exit-box" id="exitBox">
           <b id="exitTitle"></b>
           <p class="small" id="exitText" style="margin:4px 0 10px"></p>
@@ -474,7 +475,7 @@
     window.scrollTo(0, 0);
   }
 
-  var EXPECTED_SERVER = '1.5';
+  var EXPECTED_SERVER = '1.6';
   function checkServer(r) {
     var v = r && r.v ? String(r.v) : '';
     var num = function (x) { var q = String(x).split('.'); return (parseInt(q[0], 10) || 0) * 1000 + (parseInt(q[1], 10) || 0); };
@@ -1067,23 +1068,85 @@
     });
   });
 
+  $('rotateDisp').addEventListener('click', function () {
+    if (!confirm('להחליף את קישור מסך התצוגה?\n\nכל מסך שפתוח עם הקישור הנוכחי, כולל אצל מי שקיבל אותו שלא כדין, יפסיק להציג קוד תוך פחות מדקה. אחרי ההחלפה צריך לפתוח בטאבלט את הקישור החדש.')) return;
+    call('rotateDispKey', { id: current.id }).then(function (r) {
+      NV.toast(r.ok ? 'נוצר קישור חדש למסך התצוגה. פתח אותו בטאבלט' : r.error, 4000);
+      refreshDetail(false);
+    }).catch(function (err) { NV.toast(err.message); });
+  });
+
+  // ===== ייצוא לאקסל =====
+  var xlsxReady = null;
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!xlsxReady) {
+      xlsxReady = new Promise(function (resolve, reject) {
+        var sc = document.createElement('script');
+        sc.src = 'vendor/xlsx.full.min.js';
+        sc.onload = function () { resolve(window.XLSX); };
+        sc.onerror = function () { xlsxReady = null; reject(new Error('לא הצלחתי לטעון את רכיב האקסל. נסה שוב')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return xlsxReady;
+  }
+  function xDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d;
+  }
+  function xText(v) { return { t: 's', v: String(v === undefined || v === null ? '' : v) }; }
+
   $('exportBtn').addEventListener('click', function () {
-    call('exportEvent', { id: current.id }).then(function (r) {
+    var btn = $('exportBtn');
+    btn.disabled = true;
+    Promise.all([call('exportEvent', { id: current.id }), loadXlsx()]).then(function (res) {
+      btn.disabled = false;
+      var r = res[0];
+      var X = res[1];
       if (!r.ok) { NV.toast(r.error); return; }
-      var head = ['מספר אישי', 'טלפון', 'דואר אלקטרוני', 'זמן הרשמה', 'מקור הרשמה', 'שעת הגעה', 'שעת יציאה', 'משך נוכחות', 'חריגות', 'רישום ידני', 'בקרה מוגברת'];
-      var asText = function (v) { return '="' + String(v).replace(/"/g, '') + '"'; };
-      var cell = function (v) { v = String(v === undefined ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-      var lines = [head.join(',')].concat(r.rows.map(function (x) {
-        return [asText(x.pn), x.phone ? asText(x.phone) : '', cell(x.email), cell(NV.fmtDateTime(x.regAt)), cell(x.source), cell(NV.fmtTime(x.inAt)), cell(NV.fmtTime(x.outAt)), cell(NV.duration(x.inAt, x.outAt)), cell(x.flags), cell(x.manual), cell(x.watch || '')].join(',');
+      var head = ['מספר אישי', 'טלפון', 'דואר אלקטרוני', 'מצב הרשמה', 'מקור הרשמה', 'זמן הרשמה', 'מצב נוכחות', 'שעת הגעה', 'שעת יציאה', 'משך נוכחות', 'חריגות', 'רישום ידני', 'בקרה מוגברת'];
+      var rows = r.rows.slice().sort(function (a, b) { return String(a.regAt).localeCompare(String(b.regAt)); });
+      var aoa = [head].concat(rows.map(function (x) {
+        return [xText(x.pn), xText(x.phone), xText(x.email), xText(x.status), xText(x.source), xDate(x.regAt), xText(x.presence),
+          xDate(x.inAt), xDate(x.outAt), xText(NV.duration(x.inAt, x.outAt)), xText(x.flags), xText(x.manual), xText(x.watch || '')];
       }));
-      var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      var ws = X.utils.aoa_to_sheet(aoa, { cellDates: true, dateNF: 'dd/mm/yyyy hh:mm' });
+      ws['!cols'] = [12, 13, 26, 10, 22, 17, 11, 17, 17, 11, 40, 40, 12].map(function (w) { return { wch: w }; });
+      ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: head.length - 1 } }) };
+      var ev = r.event;
+      var c = r.counts || {};
+      var info = X.utils.aoa_to_sheet([
+        ['שם האירוע', ev.name],
+        ['תאריך', NV.fmtDate(ev.date)],
+        ['שעות', NV.timeRange(ev.start, ev.end)],
+        ['רדיוס המתחם במטרים', ev.radius],
+        ['מכסה', ev.quota],
+        ['רשומים כעת', c.registered],
+        ['הגיעו', c.arrived],
+        ['יצאו', c.exited],
+        ['שוטרים עם חריגה', c.flagged],
+        ['רישומים ידניים', c.manual],
+        ['שורות בדוח, כולל הרשמות שבוטלו', rows.length],
+        ['הופק ב', xDate(r.generatedAt)]
+      ], { cellDates: true, dateNF: 'dd/mm/yyyy hh:mm' });
+      info['!cols'] = [{ wch: 30 }, { wch: 40 }];
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, ws, 'נוכחות');
+      X.utils.book_append_sheet(wb, info, 'פרטי האירוע');
+      wb.Workbook = { Views: [{ RTL: true }] };
+      var safe = ev.name.replace(/[\\\/:*?"<>|\[\]]/g, '').slice(0, 40);
+      var bytes = X.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+      var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'נוכחות-' + r.event.date + '-' + r.event.name.replace(/[\\\/:*?"<>|]/g, '').slice(0, 40) + '.csv';
+      a.download = 'סמי-נוכחות-' + ev.date + '-' + safe + '.xlsx';
       document.body.appendChild(a);
       a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    });
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      NV.toast('הדוח ירד למחשב: ' + rows.length + ' שורות');
+    }).catch(function (err) { btn.disabled = false; NV.toast(err.message, 4000); });
   });
 
   // ===== רשימת מאושרים =====
