@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#072A1C">
+<meta name="robots" content="noindex, nofollow">
+<title>סמ״י — בדיקת עומס</title>
+<link rel="icon" href="favicon.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 18px 0 14px; }
+  .page-head h1 { font-family: var(--display); font-weight: 900; font-size: 34px; margin: 0; line-height: 1.1; }
+  .eyebrow { color: var(--gold-dark); font-weight: 700; font-size: 14px; margin: 0 0 4px; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .field-hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg label { margin: 0; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: 15px; cursor: pointer; background: #fff; }
+  .seg label:has(input:checked) { border-color: var(--green-700); background: var(--ok-bg); font-weight: 700; }
+  .seg input { accent-color: var(--green-700); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .presets button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 13px; cursor: pointer; color: var(--green-800); }
+  .presets button:hover { border-color: var(--gold); }
+  .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 500; margin: 10px 0 0; }
+  .check input { width: 18px; height: 18px; accent-color: var(--green-700); }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .tile { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+  .tile .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .tile .l { font-size: 13px; color: var(--muted); }
+  .tile.good .v { color: var(--ok); }
+  .tile.warn .v { color: var(--warn); }
+  .tile.bad .v { color: var(--bad); }
+  .phase { font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+  .bar { height: 10px; background: #ECE4D0; border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-2)); transition: width .2s; }
+  canvas#chart { width: 100%; height: 260px; display: block; margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 5px; vertical-align: middle; }
+  .verdict { border-radius: 16px; padding: 16px 18px; margin-top: 4px; }
+  .verdict h3 { margin: 0 0 6px; font-size: 22px; }
+  .verdict.good { background: var(--ok-bg); color: #0D5A33; }
+  .verdict.warn { background: var(--warn-bg); color: var(--warn); }
+  .verdict.bad { background: var(--bad-bg); color: var(--bad); }
+  .verdict ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1.5px solid var(--line); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .table-scroll { overflow-x: auto; }
+  .errs { font-size: 14px; margin: 8px 0 0; padding-inline-start: 18px; }
+  .login-card { max-width: 420px; margin: 40px auto; }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--green-700); border-radius: 50%; animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  @media (max-width: 900px) {
+    .grid2, .row2 { grid-template-columns: minmax(0, 1fr); }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="emblem-badge"><img src="emblem-256.webp" alt="סמל מרחב כרמל"></div>
+  <div class="brand"><b>סמ״י</b><small>סד״כ מבצעי ייעודי · בדיקת עומס</small></div>
+  <span class="spacer"></span>
+  <span class="tag" id="verTag" hidden></span>
+</header>
+
+<main class="wrap wide">
+  <section id="loginView">
+    <div class="card login-card">
+      <p class="eyebrow">מנהל על בלבד</p>
+      <h2>כניסה לכלי בדיקת העומס</h2>
+      <label for="password">סיסמת מנהל העל</label>
+      <input id="password" type="password" autocomplete="current-password">
+      <div id="loginNotice"></div>
+      <div class="btn-row"><button class="btn gold block" id="loginBtn" type="button">כניסה</button></div>
+    </div>
+  </section>
+
+  <section id="mainView" hidden>
+    <div class="page-head"><div><p class="eyebrow">בדיקת עמידות של השרת</p><h1>בדיקת עומס</h1></div></div>
+
+    <div class="notice warn"><b>הבדיקה רצה על השרת האמיתי.</b> היא יוצרת אירוע בדיקה זמני, שלא מופיע ברשימת האירועים ולא משפיע על הבקרה המוגברת, ומוחקת אותו בסוף. כדאי להריץ אותה כשאין אירוע פעיל, כי בזמן הבדיקה שוטרים אמיתיים ירגישו את העומס.</div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>הגדרות הבדיקה</h3>
+        <label>תרחיש</label>
+        <div class="seg" id="scenario">
+          <label><input type="radio" name="sc" value="in" checked> גל הגעה</label>
+          <label><input type="radio" name="sc" value="inout"> הגעה ואז יציאה</label>
+          <label><input type="radio" name="sc" value="reg"> הרשמה המונית</label>
+          <label><input type="radio" name="sc" value="full"> מסלול מלא</label>
+        </div>
+        <div class="field-hint" id="scHint"></div>
+
+        <div class="row2">
+          <div>
+            <label for="officers">מספר שוטרים מדומים</label>
+            <input id="officers" type="number" min="5" max="1000" value="250" inputmode="numeric">
+            <div class="presets" data-for="officers"><button type="button" data-v="50">50</button><button type="button" data-v="100">100</button><button type="button" data-v="250">250</button><button type="button" data-v="500">500</button><button type="button" data-v="1000">1,000</button></div>
+          </div>
+          <div>
+            <label for="spread">פיזור בשניות</label>
+            <input id="spread" type="number" min="0" max="1800" value="60" inputmode="numeric">
+            <div class="presets" data-for="spread"><button type="button" data-v="0">כולם בבת אחת</button><button type="button" data-v="30">30</button><button type="button" data-v="60">דקה</button><button type="button" data-v="300">5 דקות</button><button type="button" data-v="600">10 דקות</button></div>
+          </div>
+        </div>
+        <div class="field-hint">פיזור 0 שולח את כל השוטרים באותה שנייה, כמו גל צפוף מאוד מול המסך.</div>
+
+        <div class="row2">
+          <div>
+            <label for="screens">מסכי תצוגה פתוחים</label>
+            <input id="screens" type="number" min="0" max="30" value="3" inputmode="numeric">
+            <div class="field-hint">כל מסך פונה לשרת פעם בחצי דקה</div>
+          </div>
+          <div>
+            <label for="admins">מסכי ניהול פתוחים</label>
+            <input id="admins" type="number" min="0" max="20" value="2" inputmode="numeric">
+            <div class="field-hint">כל מסך ניהול מתרענן פעם ב-10 שניות</div>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="outside">שוטרים מחוץ למתחם, באחוזים</label>
+            <input id="outside" type="number" min="0" max="100" value="5" inputmode="numeric">
+          </div>
+          <div>
+            <label for="limit">מגבלת בקשות במקביל</label>
+            <input id="limit" type="number" min="0" max="500" value="0" inputmode="numeric">
+            <div class="field-hint">0 = ללא מגבלה</div>
+          </div>
+        </div>
+        <label class="check"><input id="pageLoad" type="checkbox" checked> כולל פתיחת דף השוטר לפני הסריקה ורענון אחריה, כמו בטלפון אמיתי</label>
+        <label class="check"><input id="retries" type="checkbox" checked> ניסיונות חוזרים אוטומטיים כמו בטלפון</label>
+        <label class="check"><input id="cleanup" type="checkbox" checked> מחיקת נתוני הבדיקה בסוף</label>
+        <div id="runNotice"></div>
+        <div class="btn-row">
+          <button class="btn gold" id="runBtn" type="button">הרצת הבדיקה</button>
+          <button class="btn ghost" id="stopBtn" type="button" hidden>עצירה</button>
+          <button class="btn ghost" id="cleanAllBtn" type="button" style="margin-inline-start:auto">מחיקת שאריות מבדיקות קודמות</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>איך לקרוא את התוצאות</h3>
+        <ul style="margin:6px 0 0;padding-inline-start:20px;line-height:1.7;font-size:15px">
+          <li><b>זמן המתנה של שוטר:</b> מהרגע שסרק ועד שקיבל אישור, כולל ניסיונות חוזרים. זה מה שהשוטר מרגיש מול המסך.</li>
+          <li><b>חציון ו-90%:</b> חצי מהשוטרים חיכו פחות מהחציון, ו-90% חיכו פחות מהמספר השני.</li>
+          <li><b>זמן בשרת והמתנה לנעילה:</b> כמה מהזמן הלך על עבודת השרת, וכמה על המתנה בתור לכתיבה בגיליון.</li>
+          <li><b>שוטרים שנכשלו:</b> סריקה שלא נקלטה גם אחרי כל הניסיונות. היעד הוא אפס.</li>
+          <li><b>אימות מול השרת:</b> בסוף הבדיקה סופרים בגיליון כמה נקלטו בפועל ושאין כפילויות.</li>
+        </ul>
+        <div class="notice info" style="margin-top:14px">הבדיקה רצה מהמחשב הזה, כך שכל הבקשות יוצאות מאותה רשת. בשטח כל שוטר שולח מהטלפון שלו, והתוצאה בשטח צפויה להיות דומה או טובה יותר.</div>
+      </div>
+    </div>
+
+    <div class="card" id="liveCard" hidden>
+      <div class="phase"><span id="phaseSpin" class="spin"></span><span id="phaseName"></span></div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="tiles">
+        <div class="tile good"><div class="v" id="tDone">0</div><div class="l">נקלטו</div></div>
+        <div class="tile"><div class="v" id="tFlight">0</div><div class="l">בדרך כרגע</div></div>
+        <div class="tile warn"><div class="v" id="tRetry">0</div><div class="l">ניסיונות חוזרים</div></div>
+        <div class="tile bad"><div class="v" id="tFail">0</div><div class="l">נכשלו סופית</div></div>
+        <div class="tile"><div class="v" id="tRate">0</div><div class="l">נקלטו בשנייה, ב-5 השניות האחרונות</div></div>
+        <div class="tile"><div class="v" id="tP50">—</div><div class="l">המתנה חציונית, שניות</div></div>
+        <div class="tile"><div class="v" id="tP90">—</div><div class="l">המתנה של 90%, שניות</div></div>
+        <div class="tile"><div class="v" id="tMax">—</div><div class="l">המתנה מרבית, שניות</div></div>
+        <div class="tile"><div class="v" id="tSrv">—</div><div class="l">זמן ממוצע בשרת, שניות</div></div>
+        <div class="tile"><div class="v" id="tLock">—</div><div class="l">המתנה ממוצעת לנעילה, שניות</div></div>
+        <div class="tile"><div class="v" id="tOther">0</div><div class="l">בקשות רקע: דף שוטר, מסכים, ניהול</div></div>
+        <div class="tile"><div class="v" id="tElapsed">0</div><div class="l">שניות מתחילת השלב</div></div>
+      </div>
+      <canvas id="chart" width="1100" height="260" aria-label="זמן המתנה של כל שוטר לאורך הבדיקה"></canvas>
+      <div class="legend"><span><i style="background:#12804A"></i>נקלט בניסיון הראשון</span><span><i style="background:#D4A72C"></i>נקלט אחרי ניסיון חוזר</span><span><i style="background:#A23B36"></i>נכשל</span><span>ציר אופקי: שניות מתחילת השלב · ציר אנכי: זמן המתנה בשניות</span></div>
+      <ul class="errs" id="errList"></ul>
+    </div>
+
+    <div class="card" id="resultCard" hidden>
+      <h3>תוצאה</h3>
+      <div id="verdict"></div>
+    </div>
+
+    <div class="card" id="historyCard" hidden>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h3 style="margin:0">הרצות קודמות</h3><span style="flex:1"></span><button class="btn sm ghost" id="copyHist" type="button">העתקה לאקסל</button><button class="btn sm ghost" id="clearHist" type="button">ניקוי</button></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>מתי</th><th>תרחיש</th><th>שלב</th><th>שוטרים</th><th>פיזור</th><th>נקלטו</th><th>נכשלו</th><th>חציון</th><th>90%</th><th>מרבי</th><th>שיא בשנייה</th><th>עד האחרון</th><th>תוצאה</th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="credit">
+    <span>אפליקציה פותחה על ידי</span>
+    <span class="credit-en" dir="ltr">Powered by Avshalom Even</span>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var NEED_SERVER = 1.7;
+  var session = '';
+  try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
+
+  var SC = {
+    in: { name: 'גל הגעה', phases: ['in'], hint: 'כל השוטרים המדומים כבר רשומים, וסורקים הגעה מול המסך.' },
+    inout: { name: 'הגעה ואז יציאה', phases: ['in', 'out'], hint: 'גל הגעה, ואחריו הכרזה על סיום וגל יציאה. כל גל נמדד בנפרד.' },
+    reg: { name: 'הרשמה המונית', phases: ['reg'], hint: 'כל השוטרים נרשמים דרך קישור ההרשמה, כמו רגע אחרי שהקישור נשלח לקבוצה.' },
+    full: { name: 'מסלול מלא', phases: ['reg', 'in', 'out'], hint: 'הרשמה, הגעה, הכרזה על סיום ויציאה. שלושה גלים, כל אחד נמדד בנפרד.' }
+  };
+  var PHASE_NAME = { reg: 'הרשמה', in: 'הגעה', out: 'יציאה' };
+
+  // ===== שליחה לשרת עם מדידה =====
+  function send(action, data, timeoutMs) {
+    var url = window.NV_CONFIG && NV_CONFIG.API_URL;
+    var t0 = performance.now();
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 25000);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, data || {})),
+      redirect: 'follow',
+      signal: ctrl.signal
+    }).then(function (res) {
+      if (!res.ok) return { kind: 'http', status: res.status, rtt: performance.now() - t0 };
+      return res.text().then(function (txt) {
+        var j = null;
+        try { j = JSON.parse(txt); } catch (e) { }
+        var rtt = performance.now() - t0;
+        if (!j) return { kind: 'busy', rtt: rtt, note: (txt || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) };
+        if (j.ok === false && j.retry) return { kind: 'lock', rtt: rtt, json: j };
+        return { kind: 'ok', rtt: rtt, json: j };
+      });
+    }, function (err) {
+      return { kind: err && err.name === 'AbortError' ? 'timeout' : 'network', rtt: performance.now() - t0 };
+    }).finally(function () { clearTimeout(timer); });
+  }
+  var KIND_TEXT = { http: 'שגיאת שרת', busy: 'השרת השיב תשובה לא תקינה, בדרך כלל עומס הרצות אצל גוגל', lock: 'המערכת עמוסה, התור לכתיבה מלא', timeout: 'לא התקבלה תשובה תוך 25 שניות', network: 'אין חיבור לשרת' };
+
+  function admin(action, data) {
+    return send(action, Object.assign({ session: session }, data || {}), 60000).then(function (r) {
+      if (r.kind !== 'ok') throw new Error(KIND_TEXT[r.kind] || 'שגיאה');
+      if (r.json.code === 'AUTH') { logout(); throw new Error('פג תוקף הכניסה. יש להיכנס שוב'); }
+      return r.json;
+    });
+  }
+
+  // ===== כניסה =====
+  function notice(id, kind, text) { $(id).innerHTML = text ? '<div class="notice ' + kind + '">' + NV.esc(text) + '</div>' : ''; }
+  function showMain() { $('loginView').hidden = true; $('mainView').hidden = false; renderHistory(); }
+  function logout() { session = ''; try { sessionStorage.removeItem('nv_stress'); } catch (e) { } $('mainView').hidden = true; $('loginView').hidden = false; }
+  function checkVersion(v) {
+    $('verTag').hidden = !v;
+    $('verTag').textContent = 'שרת ' + v;
+    var parts = String(v || '0').split('.');
+    var num = parseFloat(parts[0] + '.' + (parts[1] || 0));
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.7 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+  }
+  $('loginBtn').addEventListener('click', function () {
+    var pw = $('password').value;
+    if (!pw) return;
+    $('loginBtn').disabled = true;
+    send('adminLogin', { password: pw, device: NV.deviceId() }).then(function (r) {
+      $('loginBtn').disabled = false;
+      if (r.kind !== 'ok') { notice('loginNotice', 'bad', KIND_TEXT[r.kind]); return; }
+      if (!r.json.ok) { notice('loginNotice', 'bad', r.json.error); return; }
+      if (r.json.role !== 'super') { notice('loginNotice', 'bad', 'כלי בדיקת העומס פתוח למנהל העל בלבד'); return; }
+      session = r.json.session;
+      try { sessionStorage.setItem('nv_stress', session); } catch (e) { }
+      showMain();
+      checkVersion(r.json.v);
+    });
+  });
+  $('password').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('loginBtn').click(); });
+
+  // ===== הגדרות =====
+  function scenario() { return document.querySelector('input[name=sc]:checked').value; }
+  function updateHint() { $('scHint').textContent = SC[scenario()].hint; }
+  document.querySelectorAll('input[name=sc]').forEach(function (r) { r.addEventListener('change', updateHint); });
+  updateHint();
+  document.querySelectorAll('.presets').forEach(function (p) {
+    p.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b) $(p.dataset.for).value = b.dataset.v;
+    });
+  });
+  function intVal(id, min, max) {
+    var v = Math.round(Number($(id).value));
+    if (!isFinite(v)) v = min;
+    return Math.max(min, Math.min(max, v));
+  }
+
+  // ===== מדידה =====
+  var run = null;
+  function pct(arr, p) {
+    if (!arr.length) return null;
+    var s = arr.slice().sort(function (a, b) { return a - b; });
+    return s[Math.min(s.length - 1, Math.floor(p * (s.length - 1) + 0.5))];
+  }
+  function sec(ms) { return ms === null || ms === undefined ? '—' : (ms / 1000).toFixed(ms < 10000 ? 1 : 0); }
+  function avg(arr) { return arr.length ? arr.reduce(function (a, b) { return a + b; }, 0) / arr.length : null; }
+
+  function newPhase(key, n) {
+    return { key: key, n: n, t0: performance.now(), done: 0, failed: 0, retries: 0, flight: 0, waits: [], points: [], srv: [], lock: [], doneTimes: [], errors: {}, other: 0, lastDone: 0 };
+  }
+  function noteError(ph, kind, extra) {
+    var k = (KIND_TEXT[kind] || kind) + (extra ? ': ' + extra : '');
+    ph.errors[k] = (ph.errors[k] || 0) + 1;
+  }
+
+  // ניסיון חוזר עם המתנה גדלה ופיזור אקראי, כמו בטלפון
+  function retryDelay(tries) {
+    var base = Math.min(30000, 2000 * Math.pow(1.6, tries));
+    return Math.round(base * (0.6 + Math.random() * 0.8));
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // בקשה של שוטר אחד עד הצלחה או ויתור
+  function persist(ph, action, data, isMain) {
+    var start = performance.now();
+    var tries = 0;
+    var useRetry = $('retries').checked;
+    function attempt() {
+      if (run.stopped) return Promise.resolve({ stopped: true });
+      if (isMain) ph.flight++; else ph.other++;
+      return limiterAcquire().then(function () { return send(action, data); }).then(function (r) {
+        limiterRelease();
+        if (isMain) ph.flight--;
+        if (r.json && typeof r.json.ms === 'number' && isMain) { ph.srv.push(r.json.ms); ph.lock.push(r.json.lw || 0); }
+        if (r.kind === 'ok') return { ok: true, json: r.json, wait: performance.now() - start, tries: tries };
+        if (isMain) noteError(ph, r.kind, r.status || r.note);
+        tries++;
+        if (isMain) ph.retries++;
+        var waited = performance.now() - start;
+        if (!useRetry || tries >= 10 || waited > 150000) return { ok: false, wait: waited, tries: tries, kind: r.kind };
+        return sleep(retryDelay(tries)).then(attempt);
+      });
+    }
+    return attempt();
+  }
+
+  // מגבלת בקשות במקביל
+  var inUse = 0;
+  var waiting = [];
+  function limiterAcquire() {
+    var lim = run ? run.limit : 0;
+    if (!lim || inUse < lim) { inUse++; return Promise.resolve(); }
+    return new Promise(function (resolve) { waiting.push(resolve); });
+  }
+  function limiterRelease() {
+    if (waiting.length) { waiting.shift()(); } else { inUse = Math.max(0, inUse - 1); }
+  }
+
+  // ===== קוד מתחלף, כמו מסך התצוגה =====
+  function refreshTokens() {
+    return send('display', { e: run.event.id, d: run.event.dispKey }, 20000).then(function (r) {
+      if (r.kind === 'ok' && r.json.ok) {
+        run.tokens = r.json.tokens;
+        run.offset = r.json.serverTime - Date.now();
+        run.windowMs = r.json.windowSec * 1000;
+      }
+    });
+  }
+  function currentQr() {
+    var w = Math.floor((Date.now() + run.offset) / run.windowMs);
+    var t = run.tokens.filter(function (x) { return x.w === w; })[0] || run.tokens[0];
+    return NV.baseUrl() + 'scan.html?e=' + encodeURIComponent(run.event.id) + '#q=' + encodeURIComponent(t.token);
+  }
+
+  // ===== עומס רקע: מסכי תצוגה ומסכי ניהול =====
+  function startBackground(ph) {
+    var timers = [];
+    var screens = run.screens;
+    var admins = run.admins;
+    for (var i = 0; i < screens; i++) {
+      (function (i) {
+        var tick = function () { ph.other++; send('display', { e: run.event.id, d: run.event.dispKey }, 20000); };
+        timers.push(setTimeout(function () { tick(); timers.push(setInterval(tick, 30000)); }, Math.random() * 30000));
+      })(i);
+    }
+    for (var j = 0; j < admins; j++) {
+      (function () {
+        var tick = function () { ph.other++; send('eventDetail', { session: session, id: run.event.id }, 30000); };
+        timers.push(setTimeout(function () { tick(); timers.push(setInterval(tick, 10000)); }, Math.random() * 10000));
+      })();
+    }
+    return function stop() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); };
+  }
+
+  // ===== שלב אחד =====
+  function runPhase(key) {
+    var n = run.officers.length || run.n;
+    var ph = newPhase(key, n);
+    run.phase = ph;
+    $('phaseName').textContent = 'שלב ' + PHASE_NAME[key] + ' · ' + n.toLocaleString('he-IL') + ' שוטרים · פיזור ' + run.spread + ' שניות';
+    $('phaseSpin').hidden = false;
+    $('errList').innerHTML = '';
+    var stopBg = startBackground(ph);
+    var tokTimer = setInterval(refreshTokens, 30000);
+    var spreadMs = run.spread * 1000;
+    var jobs = [];
+    for (var i = 0; i < n; i++) {
+      (function (i) {
+        var at = n === 1 ? 0 : spreadMs * (i / n) + (spreadMs / n) * (Math.random() - 0.5);
+        jobs.push(sleep(Math.max(0, at)).then(function () { return officer(key, i, ph); }));
+      })(i);
+    }
+    return Promise.all(jobs).then(function () {
+      clearInterval(tokTimer);
+      stopBg();
+      ph.t1 = performance.now();
+      $('phaseSpin').hidden = true;
+      draw();
+      return ph;
+    });
+  }
+
+  function officer(key, i, ph) {
+    if (run.stopped) return Promise.resolve();
+    var startedAt = performance.now() - ph.t0;
+    var o = run.officers[i];
+    var page = run.pageLoad;
+    var chain = Promise.resolve();
+    if (key === 'reg') {
+      var pn = String(run.regBase + i);
+      return persist(ph, 'register', {
+        e: run.event.id, k: run.event.regKey, pn: pn, phone: '058' + String(1000000 + i).slice(-7),
+        email: 'stress' + i + '@example.invalid', consent: true, device: 'stressreg' + run.event.id.slice(1) + 'd' + i
+      }, true).then(function (r) {
+        var good = r.ok && r.json.ok && r.json.token;
+        if (good) run.officers[i] = { pn: pn, token: r.json.token, device: 'stressreg' + run.event.id.slice(1) + 'd' + i };
+        else if (r.ok) noteError(ph, 'rejected', r.json.error);
+        finish(ph, startedAt, r, good);
+      });
+    }
+    if (!o) { ph.failed++; return Promise.resolve(); }
+    if (page) chain = chain.then(function () { return persist(ph, 'status', { e: run.event.id, token: o.token }, false); });
+    var outside = Math.random() * 100 < run.outside;
+    var c = run.center;
+    var pos = outside ? { lat: c.lat + 0.012 + Math.random() * 0.01, lng: c.lng + 0.008 } : { lat: c.lat + (Math.random() - 0.5) * 0.0015, lng: c.lng + (Math.random() - 0.5) * 0.0015 };
+    var scanId = 's' + key + run.event.id + 'n' + i + Math.random().toString(36).slice(2, 8);
+    var t = 0;
+    return chain.then(function () {
+      t = performance.now();
+      return persist(ph, 'scan', {
+        scanId: scanId, e: run.event.id, token: o.token, device: o.device, qr: currentQr(),
+        lat: pos.lat, lng: pos.lng, acc: 8 + Math.round(Math.random() * 25), deviceTime: new Date().toISOString()
+      }, true);
+    }).then(function (r) {
+      var expected = key === 'out' ? 'OUT' : 'IN';
+      var good = r.ok && r.json.ok && r.json.type === expected;
+      if (r.ok && !good) noteError(ph, 'rejected', r.json.error || ('התקבל ' + r.json.type));
+      finish(ph, startedAt, r, good);
+      if (page && good) persist(ph, 'status', { e: run.event.id, token: o.token }, false);
+    });
+  }
+
+  function finish(ph, startedAt, r, good) {
+    if (r.stopped) return;
+    if (good) {
+      ph.done++;
+      ph.waits.push(r.wait);
+      ph.doneTimes.push(performance.now() - ph.t0);
+      ph.lastDone = Math.max(ph.lastDone, performance.now() - ph.t0);
+    } else {
+      ph.failed++;
+    }
+    ph.points.push({ x: startedAt + r.wait, y: r.wait, c: !good ? 'f' : r.tries ? 'r' : 'g' });
+  }
+
+  // ===== תצוגה חיה =====
+  var ui = null;
+  function tickUi() {
+    var ph = run && run.phase;
+    if (!ph) return;
+    var now = performance.now() - ph.t0;
+    $('tDone').textContent = ph.done.toLocaleString('he-IL');
+    $('tFlight').textContent = Math.max(0, ph.flight);
+    $('tRetry').textContent = ph.retries;
+    $('tFail').textContent = ph.failed;
+    var recent = ph.doneTimes.filter(function (t) { return t > now - 5000; }).length;
+    $('tRate').textContent = (recent / 5).toFixed(1);
+    $('tP50').textContent = sec(pct(ph.waits, 0.5));
+    $('tP90').textContent = sec(pct(ph.waits, 0.9));
+    $('tMax').textContent = sec(ph.waits.length ? Math.max.apply(null, ph.waits) : null);
+    $('tSrv').textContent = sec(avg(ph.srv));
+    $('tLock').textContent = sec(avg(ph.lock));
+    $('tOther').textContent = ph.other;
+    $('tElapsed').textContent = Math.round((ph.t1 || performance.now()) - ph.t0) / 1000 | 0;
+    $('barFill').style.width = Math.round(100 * (ph.done + ph.failed) / Math.max(1, ph.n)) + '%';
+    var errs = Object.keys(ph.errors);
+    $('errList').innerHTML = errs.map(function (k) { return '<li>' + NV.esc(k) + ' · ' + ph.errors[k] + ' פעמים</li>'; }).join('');
+    draw();
+  }
+
+  function draw() {
+    var ph = run && run.phase;
+    var cv = $('chart');
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!ph) return;
+    var padL = 44, padR = 12, padT = 12, padB = 26;
+    var maxX = Math.max(10000, (ph.t1 || performance.now()) - ph.t0, run.spread * 1000);
+    var maxY = Math.max(3000, ph.points.reduce(function (m, p) { return Math.max(m, p.y); }, 0) * 1.1);
+    var X = function (v) { return w - padR - (v / maxX) * (w - padL - padR); };
+    var Y = function (v) { return h - padB - (v / maxY) * (h - padT - padB); };
+    ctx.strokeStyle = '#E3DAC4'; ctx.fillStyle = '#4C5A52'; ctx.font = '12px Heebo, sans-serif'; ctx.lineWidth = 1;
+    var stepY = niceStep(maxY / 1000 / 5) * 1000;
+    for (var y = 0; y <= maxY; y += stepY) {
+      ctx.beginPath(); ctx.moveTo(padL, Y(y)); ctx.lineTo(w - padR, Y(y)); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText((y / 1000).toFixed(stepY < 1000 ? 1 : 0), padL - 6, Y(y) + 4);
+    }
+    var stepX = niceStep(maxX / 1000 / 8) * 1000;
+    for (var x = 0; x <= maxX; x += stepX) {
+      ctx.textAlign = 'center'; ctx.fillText(String(Math.round(x / 1000)), X(x), h - 8);
+    }
+    var col = { g: '#12804A', r: '#D4A72C', f: '#A23B36' };
+    ph.points.forEach(function (p) {
+      ctx.fillStyle = col[p.c];
+      ctx.beginPath(); ctx.arc(X(Math.min(p.x, maxX)), Y(p.y), 2.6, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+  function niceStep(v) {
+    var p = Math.pow(10, Math.floor(Math.log10(Math.max(v, 0.001))));
+    var m = v / p;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+  }
+
+  // ===== הרצה =====
+  $('runBtn').addEventListener('click', function () {
+    var sc = scenario();
+    var n = intVal('officers', 5, 1000);
+    run = {
+      id: Date.now(), sc: sc, n: n, spread: intVal('spread', 0, 1800), screens: intVal('screens', 0, 30), admins: intVal('admins', 0, 20),
+      outside: intVal('outside', 0, 100), limit: intVal('limit', 0, 500), pageLoad: $('pageLoad').checked, cleanup: $('cleanup').checked,
+      officers: [], phases: [], stopped: false, regBase: 9800000 + Math.floor(Math.random() * 90000)
+    };
+    notice('runNotice');
+    $('runBtn').disabled = true;
+    $('stopBtn').hidden = false;
+    $('liveCard').hidden = false;
+    $('resultCard').hidden = true;
+    $('phaseName').textContent = 'מכין אירוע בדיקה…';
+    $('phaseSpin').hidden = false;
+    var phases = SC[sc].phases;
+    var withReg = phases[0] === 'reg';
+    admin('stressSetup', { officers: withReg ? 0 : n, quota: n }).then(function (r) {
+      if (!r.ok) throw new Error(r.error);
+      checkVersion(r.v);
+      run.event = r.event;
+      run.center = r.center;
+      run.officers = withReg ? new Array(n) : r.officers;
+      run.setupMs = r.ms;
+      return refreshTokens();
+    }).then(function () {
+      if (!run.tokens) throw new Error('לא התקבל קוד ממסך התצוגה');
+      ui = setInterval(tickUi, 300);
+      var seq = Promise.resolve();
+      phases.forEach(function (key) {
+        seq = seq.then(function () {
+          if (run.stopped) return;
+          var pre = Promise.resolve();
+          if (key === 'out') {
+            $('phaseName').textContent = 'מכריז על סיום האירוע…';
+            pre = admin('setExit', { id: run.event.id, open: true }).then(function () { return refreshTokens(); }).then(function () { return sleep(1500); });
+          }
+          if (key === 'in' && withReg) {
+            run.officers = run.officers.filter(function (x) { return !!x; });
+          }
+          return pre.then(function () { return runPhase(key); }).then(function (ph) { run.phases.push(ph); });
+        });
+      });
+      return seq;
+    }).then(function () {
+      clearInterval(ui);
+      tickUi();
+      $('phaseName').textContent = 'מאמת מול השרת…';
+      $('phaseSpin').hidden = false;
+      return admin('stressStatus', { id: run.event.id });
+    }).then(function (st) {
+      run.status = st;
+      if (!run.cleanup) return null;
+      $('phaseName').textContent = 'מוחק את נתוני הבדיקה…';
+      return admin('stressCleanup', { id: run.event.id });
+    }).then(function (cl) {
+      run.cleaned = cl;
+      finishRun();
+    }).catch(function (err) {
+      clearInterval(ui);
+      notice('runNotice', 'bad', err.message);
+      if (run.event && run.cleanup) admin('stressCleanup', { id: run.event.id }).catch(function () { });
+      endButtons();
+    });
+  });
+
+  $('stopBtn').addEventListener('click', function () {
+    if (!run) return;
+    run.stopped = true;
+    $('phaseName').textContent = 'עוצר… ממתין לבקשות שכבר יצאו';
+  });
+
+  function endButtons() {
+    $('runBtn').disabled = false;
+    $('stopBtn').hidden = true;
+    $('phaseSpin').hidden = true;
+  }
+
+  function phaseSummary(ph) {
+    var dur = (ph.lastDone || 0);
+    var peak = 0;
+    var times = ph.doneTimes.slice().sort(function (a, b) { return a - b; });
+    for (var i = 0, j = 0; i < times.length; i++) {
+      while (times[i] - times[j] > 5000) j++;
+      peak = Math.max(peak, (i - j + 1) / 5);
+    }
+    return {
+      key: ph.key, n: ph.n, done: ph.done, failed: ph.failed, retries: ph.retries,
+      p50: pct(ph.waits, 0.5), p90: pct(ph.waits, 0.9), max: ph.waits.length ? Math.max.apply(null, ph.waits) : null,
+      srv: avg(ph.srv), lock: avg(ph.lock), peak: peak, last: dur, errors: ph.errors
+    };
+  }
+
+  function finishRun() {
+    endButtons();
+    $('phaseName').textContent = run.stopped ? 'הבדיקה נעצרה' : 'הבדיקה הסתיימה';
+    var sums = run.phases.map(phaseSummary);
+    var st = run.status || {};
+    var c = st.counts || {};
+    var problems = [];
+    var notes = [];
+    var level = 'good';
+    sums.forEach(function (s) {
+      var name = PHASE_NAME[s.key];
+      if (s.failed) { level = 'bad'; problems.push(name + ': ' + s.failed + ' שוטרים לא נקלטו גם אחרי כל הניסיונות'); }
+      if (s.p90 > 5000 || s.max > 30000) { if (level === 'good') level = 'warn'; notes.push(name + ': חלק מהשוטרים חיכו זמן רב. 90% חיכו עד ' + sec(s.p90) + ' שניות, והארוך ביותר ' + sec(s.max) + ' שניות'); }
+      if (s.retries && !s.failed) notes.push(name + ': היו ' + s.retries + ' ניסיונות חוזרים, וכולם נקלטו בסוף');
+    });
+    var exp = { reg: 'registered', in: 'arrived', out: 'exited' };
+    sums.forEach(function (s) {
+      var got = c[exp[s.key]];
+      if (typeof got === 'number' && got !== s.done) { level = 'bad'; problems.push(PHASE_NAME[s.key] + ': הדפדפן ספר ' + s.done + ' שנקלטו, אבל בגיליון יש ' + got); }
+    });
+    if (st.duplicatesIn || st.duplicatesOut) { level = 'bad'; problems.push('נמצאו רישומים כפולים בגיליון: ' + (st.duplicatesIn + st.duplicatesOut)); }
+    if (run.stopped) { level = 'warn'; notes.unshift('הבדיקה נעצרה לפני הסוף, והתוצאה חלקית'); }
+    var errAll = {};
+    sums.forEach(function (s) { Object.keys(s.errors).forEach(function (k) { errAll[k] = (errAll[k] || 0) + s.errors[k]; }); });
+    var errKeys = Object.keys(errAll);
+    var title = level === 'good' ? 'השרת עמד בעומס' : level === 'warn' ? 'השרת עמד בעומס, עם עיכובים' : 'נמצאה בעיה';
+    var rows = sums.map(function (s) {
+      return '<tr><td>' + PHASE_NAME[s.key] + '</td><td>' + s.n + '</td><td>' + s.done + '</td><td>' + s.failed + '</td><td>' + s.retries + '</td><td>' + sec(s.p50) + '</td><td>' + sec(s.p90) + '</td><td>' + sec(s.max) + '</td><td>' + s.peak.toFixed(1) + '</td><td>' + sec(s.last) + '</td><td>' + sec(s.srv) + '</td><td>' + sec(s.lock) + '</td></tr>';
+    }).join('');
+    $('verdict').innerHTML =
+      '<div class="verdict ' + level + '"><h3>' + title + '</h3>' +
+      (problems.length ? '<ul>' + problems.map(function (p) { return '<li>' + NV.esc(p) + '</li>'; }).join('') + '</ul>' : '<div>כל השוטרים המדומים נקלטו, ובגיליון אין כפילויות.</div>') +
+      (notes.length ? '<ul>' + notes.map(function (p) { return '<li>' + NV.esc(p) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +
+      (errKeys.length ? '<p style="margin:12px 0 4px"><b>תקלות שנצפו בדרך</b></p><ul class="errs">' + errKeys.map(function (k) { return '<li>' + NV.esc(k) + ' · ' + errAll[k] + ' פעמים</li>'; }).join('') + '</ul>' : '') +
+      '<div class="table-scroll" style="margin-top:12px"><table><thead><tr><th>שלב</th><th>שוטרים</th><th>נקלטו</th><th>נכשלו</th><th>ניסיונות חוזרים</th><th>חציון</th><th>90%</th><th>מרבי</th><th>שיא בשנייה</th><th>עד האחרון</th><th>זמן בשרת</th><th>המתנה לנעילה</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="field-hint">זמנים בשניות. "עד האחרון" הוא הזמן מתחילת השלב ועד שהשוטר האחרון נקלט. ' +
+      'אימות מול הגיליון: רשומים ' + (c.registered === undefined ? '—' : c.registered) + ', הגיעו ' + (c.arrived === undefined ? '—' : c.arrived) + ', יצאו ' + (c.exited === undefined ? '—' : c.exited) + ', סומנו בחריגה ' + (c.flagged === undefined ? '—' : c.flagged) + '. ' +
+      (run.cleaned ? 'נתוני הבדיקה נמחקו: ' + run.cleaned.removedRows + ' שורות.' : 'נתוני הבדיקה נשמרו בגיליון. אפשר למחוק אותם בכפתור "מחיקת שאריות".') + '</p>';
+    $('resultCard').hidden = false;
+    var when = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    var hist = loadHistory();
+    sums.forEach(function (s) {
+      hist.unshift({ when: when, sc: SC[run.sc].name, phase: PHASE_NAME[s.key], n: s.n, spread: run.spread, done: s.done, failed: s.failed, p50: sec(s.p50), p90: sec(s.p90), max: sec(s.max), peak: s.peak.toFixed(1), last: sec(s.last), level: level });
+    });
+    saveHistory(hist.slice(0, 60));
+    renderHistory();
+    $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ===== היסטוריה, נשמרת רק בדפדפן הזה =====
+  function loadHistory() { try { return JSON.parse(localStorage.getItem('nv_stress_hist') || '[]'); } catch (e) { return []; } }
+  function saveHistory(h) { try { localStorage.setItem('nv_stress_hist', JSON.stringify(h)); } catch (e) { } }
+  var LEVEL = { good: 'עמד בעומס', warn: 'עם עיכובים', bad: 'בעיה' };
+  function renderHistory() {
+    var h = loadHistory();
+    $('historyCard').hidden = !h.length;
+    $('histBody').innerHTML = h.map(function (x) {
+      return '<tr><td>' + NV.esc(x.when) + '</td><td>' + NV.esc(x.sc) + '</td><td>' + NV.esc(x.phase) + '</td><td>' + x.n + '</td><td>' + x.spread + '</td><td>' + x.done + '</td><td>' + x.failed + '</td><td>' + x.p50 + '</td><td>' + x.p90 + '</td><td>' + x.max + '</td><td>' + x.peak + '</td><td>' + x.last + '</td><td><span class="chip ' + (x.level === 'good' ? 'ok' : 'warn') + '">' + LEVEL[x.level] + '</span></td></tr>';
+    }).join('');
+  }
+  $('copyHist').addEventListener('click', function () {
+    var head = ['מתי', 'תרחיש', 'שלב', 'שוטרים', 'פיזור בשניות', 'נקלטו', 'נכשלו', 'חציון', '90%', 'מרבי', 'שיא בשנייה', 'עד האחרון', 'תוצאה'];
+    var lines = [head.join('\t')].concat(loadHistory().map(function (x) {
+      return [x.when, x.sc, x.phase, x.n, x.spread, x.done, x.failed, x.p50, x.p90, x.max, x.peak, x.last, LEVEL[x.level]].join('\t');
+    }));
+    NV.copy(lines.join('\n'));
+  });
+  $('clearHist').addEventListener('click', function () { saveHistory([]); renderHistory(); });
+
+  $('cleanAllBtn').addEventListener('click', function () {
+    if (!confirm('למחוק את כל נתוני הבדיקה שנשארו מהרצות קודמות? נתונים של אירועים אמיתיים לא נמחקים.')) return;
+    admin('stressCleanup', { all: true }).then(function (r) {
+      notice('runNotice', 'ok', r.removedEvents ? 'נמחקו ' + r.removedEvents + ' אירועי בדיקה ו-' + r.removedRows + ' שורות.' : 'לא נמצאו שאריות.');
+    }).catch(function (err) { notice('runNotice', 'bad', err.message); });
+  });
+
+  window.addEventListener('resize', draw);
+  window.addEventListener('beforeunload', function (e) {
+    var running = !!run && $('runBtn').disabled;
+    if (running) { e.preventDefault(); e.returnValue = ''; }
+  });
+  if (session) showMain();
+})();
+</script>
+</body>
+</html>
