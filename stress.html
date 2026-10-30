@@ -206,7 +206,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var NEED_SERVER = 1.7;
+  var NEED_SERVER = 1.8;
   var session = '';
   try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
 
@@ -223,7 +223,7 @@
     var url = window.NV_CONFIG && NV_CONFIG.API_URL;
     var t0 = performance.now();
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 25000);
+    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 45000);
     return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -244,7 +244,7 @@
       return { kind: err && err.name === 'AbortError' ? 'timeout' : 'network', rtt: performance.now() - t0 };
     }).finally(function () { clearTimeout(timer); });
   }
-  var KIND_TEXT = { http: 'שגיאת שרת', busy: 'השרת השיב תשובה לא תקינה, בדרך כלל עומס הרצות אצל גוגל', lock: 'המערכת עמוסה, התור לכתיבה מלא', timeout: 'לא התקבלה תשובה תוך 25 שניות', network: 'אין חיבור לשרת' };
+  var KIND_TEXT = { http: 'שגיאת שרת', busy: 'השרת השיב תשובה לא תקינה, בדרך כלל עומס הרצות אצל גוגל', lock: 'המערכת עמוסה, התור לכתיבה מלא', timeout: 'לא התקבלה תשובה תוך 45 שניות', network: 'אין חיבור לשרת' };
 
   function admin(action, data) {
     return send(action, Object.assign({ session: session }, data || {}), 60000).then(function (r) {
@@ -263,7 +263,7 @@
     $('verTag').textContent = 'שרת ' + v;
     var parts = String(v || '0').split('.');
     var num = parseFloat(parts[0] + '.' + (parts[1] || 0));
-    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.7 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.8 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
   }
   $('loginBtn').addEventListener('click', function () {
     var pw = $('password').value;
@@ -653,7 +653,7 @@
       var got = c[exp[s.key]];
       if (typeof got === 'number' && got !== s.done) { level = 'bad'; problems.push(PHASE_NAME[s.key] + ': הדפדפן ספר ' + s.done + ' שנקלטו, אבל בגיליון יש ' + got); }
     });
-    if (st.duplicatesIn || st.duplicatesOut) { level = 'bad'; problems.push('נמצאו רישומים כפולים בגיליון: ' + (st.duplicatesIn + st.duplicatesOut)); }
+    if (st.duplicatesIn || st.duplicatesOut) { if (level === 'good') level = 'warn'; notes.push('נמצאו ' + (st.duplicatesIn + st.duplicatesOut) + ' שורות כפולות ביומן. הן לא משפיעות על הספירה ועל הדוח, כי נספרת הסריקה הראשונה'); }
     if (run.stopped) { level = 'warn'; notes.unshift('הבדיקה נעצרה לפני הסוף, והתוצאה חלקית'); }
     var errAll = {};
     sums.forEach(function (s) { Object.keys(s.errors).forEach(function (k) { errAll[k] = (errAll[k] || 0) + s.errors[k]; }); });

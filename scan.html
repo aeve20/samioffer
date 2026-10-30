@@ -419,7 +419,7 @@
     if (!q.length) return Promise.resolve();
     flushing = true;
     var item = q[0];
-    return NV.api('scan', item, { timeout: 20000 }).then(function (r) {
+    return NV.api('scan', item, { timeout: 45000 }).then(function (r) {
       setOnline(true);
       if (!r.ok && r.retry) throw Object.assign(new Error('busy'), { retry: true });
       saveQueue(queue().filter(function (x) { return x.scanId !== item.scanId; }));
