@@ -206,7 +206,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var NEED_SERVER = 10901;
+  var NEED_SERVER = 10902;
   var session = '';
   try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
 
@@ -263,7 +263,7 @@
     $('verTag').textContent = 'שרת ' + v;
     var q = String(v || '0').split('.');
     var num = (parseInt(q[0], 10) || 0) * 10000 + (parseInt(q[1], 10) || 0) * 100 + (parseInt(q[2], 10) || 0);
-    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9.1 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9.2 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
   }
   $('loginBtn').addEventListener('click', function () {
     var pw = $('password').value;
@@ -660,6 +660,10 @@
     var errAll = {};
     sums.forEach(function (s) { Object.keys(s.errors).forEach(function (k) { errAll[k] = (errAll[k] || 0) + s.errors[k]; }); });
     var errKeys = Object.keys(errAll);
+    if (errKeys.some(function (k) { return /for one day|too many times|Service invoked|quota/i.test(k); })) {
+      level = 'bad';
+      problems.unshift('גוגל חסם חלק מהבקשות בגלל מכסה יומית של החשבון. זו לא בעיה בעומס: המכסה מתאפסת 24 שעות אחרי הבקשה הראשונה של היום. יש להמתין ולהריץ שוב מחר');
+    }
     var title = level === 'good' ? 'השרת עמד בעומס' : level === 'warn' ? 'השרת עמד בעומס, עם עיכובים' : 'נמצאה בעיה';
     var rows = sums.map(function (s) {
       return '<tr><td>' + PHASE_NAME[s.key] + '</td><td>' + s.n + '</td><td>' + s.done + '</td><td>' + s.failed + '</td><td>' + s.retries + '</td><td>' + sec(s.p50) + '</td><td>' + sec(s.p90) + '</td><td>' + sec(s.max) + '</td><td>' + s.peak.toFixed(1) + '</td><td>' + sec(s.last) + '</td><td>' + sec(s.srv) + '</td><td>' + sec(s.lock) + '</td></tr>';
