@@ -206,7 +206,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var NEED_SERVER = 1.8;
+  var NEED_SERVER = 1.9;
   var session = '';
   try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
 
@@ -263,7 +263,7 @@
     $('verTag').textContent = 'שרת ' + v;
     var parts = String(v || '0').split('.');
     var num = parseFloat(parts[0] + '.' + (parts[1] || 0));
-    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.8 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
   }
   $('loginBtn').addEventListener('click', function () {
     var pw = $('password').value;
@@ -545,7 +545,7 @@
     var n = intVal('officers', 5, 1000);
     run = {
       id: Date.now(), sc: sc, n: n, spread: intVal('spread', 0, 1800), screens: intVal('screens', 0, 30), admins: intVal('admins', 0, 20),
-      outside: intVal('outside', 0, 100), limit: intVal('limit', 0, 500), pageLoad: $('pageLoad').checked, cleanup: $('cleanup').checked,
+      outside: intVal('outside', 0, 100), limit: intVal('limit', 0, 500), pageLoad: $('pageLoad').checked, cleanup: $('cleanup').checked, retries: $('retries').checked,
       officers: [], phases: [], stopped: false, regBase: 9800000 + Math.floor(Math.random() * 90000)
     };
     notice('runNotice');
@@ -655,6 +655,7 @@
     });
     if (st.duplicatesIn || st.duplicatesOut) { if (level === 'good') level = 'warn'; notes.push('נמצאו ' + (st.duplicatesIn + st.duplicatesOut) + ' שורות כפולות ביומן. הן לא משפיעות על הספירה ועל הדוח, כי נספרת הסריקה הראשונה'); }
     if (run.stopped) { level = 'warn'; notes.unshift('הבדיקה נעצרה לפני הסוף, והתוצאה חלקית'); }
+    if (!run.retries) notes.unshift('הבדיקה רצה בלי ניסיונות חוזרים: כל תשובת עומס נספרה ככישלון. טלפון אמיתי מנסה שוב לבד');
     var errAll = {};
     sums.forEach(function (s) { Object.keys(s.errors).forEach(function (k) { errAll[k] = (errAll[k] || 0) + s.errors[k]; }); });
     var errKeys = Object.keys(errAll);

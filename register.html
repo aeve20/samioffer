@@ -181,9 +181,24 @@
     btn.innerHTML = '<span class="spinner light"></span> נרשם…';
     $('formNotice').innerHTML = '';
     var attempt = 0;
-    (function send() {
-      NV.api('register', Object.assign({ e: e, k: k, consent: true, device: NV.deviceId() }, data)).then(function (r) {
-        if (!r.ok && r.retry && attempt++ < 3) { setTimeout(send, 1200 * attempt); return; }
+    var started = Date.now();
+    // בעומס: ממשיכים לנסות לבד, בהמתנה גדלה עם פיזור אקראי, עד שלוש דקות
+    function retryLater() {
+      if (Date.now() - started > 180000) return false;
+      attempt++;
+      $('formNotice').innerHTML = '<div class="notice warn"><span class="spinner"></span> יש עומס רגעי בהרשמות. ההרשמה נשלחת שוב אוטומטית, אין צורך ללחוץ שוב ואין לסגור את הדף.</div>';
+      var base = Math.min(20000, 1500 * Math.pow(1.6, attempt));
+      setTimeout(send, Math.round(base * (0.6 + Math.random() * 0.8)));
+      return true;
+    }
+    function giveUp(text) {
+      btn.disabled = false;
+      btn.textContent = 'הרשמה';
+      $('formNotice').innerHTML = '<div class="notice bad">' + NV.esc(text) + '</div>';
+    }
+    function send() {
+      NV.api('register', Object.assign({ e: e, k: k, consent: true, device: NV.deviceId() }, data), { timeout: 45000 }).then(function (r) {
+        if (!r.ok && r.retry) { if (!retryLater()) giveUp('המערכת עמוסה כרגע. נסה שוב בעוד כמה דקות.'); return; }
         btn.disabled = false;
         btn.textContent = 'הרשמה';
         if (!r.ok) {
@@ -191,22 +206,22 @@
           if (r.code === 'FULL' || r.code === 'CLOSED') { show('form', false); show('closed', true); }
           return;
         }
+        $('formNotice').innerHTML = '';
         NV.setAuth(e, r.token, r.event);
         show('form', false);
         $('slots').innerHTML = '';
-        $('doneText').textContent = r.already
+        // אחרי ניסיון חוזר, "כבר רשום" פירושו שהניסיון הקודם הצליח
+        $('doneText').textContent = r.already && attempt === 0
           ? 'כבר היית רשום לאירוע. ההרשמה שוחזרה למכשיר הזה.'
           : 'מקומך באירוע שמור. ביום האירוע סרוק את הקוד שעל המסך בנקודת הריכוז.';
         $('doneLink').href = scanLink;
         show('done', true);
         window.scrollTo(0, 0);
       }).catch(function (err) {
-        if (attempt++ < 3) { setTimeout(send, 1500 * attempt); return; }
-        btn.disabled = false;
-        btn.textContent = 'הרשמה';
-        $('formNotice').innerHTML = '<div class="notice bad">' + NV.esc(err.message) + '. נסה שוב.</div>';
+        if (!retryLater()) giveUp(err.message + '. נסה שוב.');
       });
-    })();
+    }
+    send();
   });
 
   init();
