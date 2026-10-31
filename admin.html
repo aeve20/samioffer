@@ -475,10 +475,10 @@
     window.scrollTo(0, 0);
   }
 
-  var EXPECTED_SERVER = '1.9';
+  var EXPECTED_SERVER = '1.9.1';
   function checkServer(r) {
     var v = r && r.v ? String(r.v) : '';
-    var num = function (x) { var q = String(x).split('.'); return (parseInt(q[0], 10) || 0) * 1000 + (parseInt(q[1], 10) || 0); };
+    var num = function (x) { var q = String(x).split('.'); return (parseInt(q[0], 10) || 0) * 10000 + (parseInt(q[1], 10) || 0) * 100 + (parseInt(q[2], 10) || 0); };
     var old = !v || num(v) < num(EXPECTED_SERVER);
     if (!old) { $('serverWarn').hidden = true; return; }
     $('serverWarn').innerHTML = '<div class="notice bad"><b>השרת לא עודכן לגרסה האחרונה' + (v ? ' (כרגע פועלת גרסה ' + NV.esc(v) + ')' : '') + '.</b> ' +

@@ -206,7 +206,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var NEED_SERVER = 1.9;
+  var NEED_SERVER = 10901;
   var session = '';
   try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
 
@@ -261,9 +261,9 @@
   function checkVersion(v) {
     $('verTag').hidden = !v;
     $('verTag').textContent = 'שרת ' + v;
-    var parts = String(v || '0').split('.');
-    var num = parseFloat(parts[0] + '.' + (parts[1] || 0));
-    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+    var q = String(v || '0').split('.');
+    var num = (parseInt(q[0], 10) || 0) * 10000 + (parseInt(q[1], 10) || 0) * 100 + (parseInt(q[2], 10) || 0);
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9.1 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
   }
   $('loginBtn').addEventListener('click', function () {
     var pw = $('password').value;
@@ -651,7 +651,8 @@
     var exp = { reg: 'registered', in: 'arrived', out: 'exited' };
     sums.forEach(function (s) {
       var got = c[exp[s.key]];
-      if (typeof got === 'number' && got !== s.done) { level = 'bad'; problems.push(PHASE_NAME[s.key] + ': הדפדפן ספר ' + s.done + ' שנקלטו, אבל בגיליון יש ' + got); }
+      if (typeof got === 'number' && got < s.done) { level = 'bad'; problems.push(PHASE_NAME[s.key] + ': ' + s.done + ' קיבלו אישור מהשרת, אבל בגיליון נמצאו רק ' + got + '. ' + (s.done - got) + ' רישומים אבדו. יש לעדכן את קוד השרת לפני שימוש'); }
+      else if (typeof got === 'number' && got !== s.done) { level = 'bad'; problems.push(PHASE_NAME[s.key] + ': הדפדפן ספר ' + s.done + ' שנקלטו, אבל בגיליון יש ' + got); }
     });
     if (st.duplicatesIn || st.duplicatesOut) { if (level === 'good') level = 'warn'; notes.push('נמצאו ' + (st.duplicatesIn + st.duplicatesOut) + ' שורות כפולות ביומן. הן לא משפיעות על הספירה ועל הדוח, כי נספרת הסריקה הראשונה'); }
     if (run.stopped) { level = 'warn'; notes.unshift('הבדיקה נעצרה לפני הסוף, והתוצאה חלקית'); }
