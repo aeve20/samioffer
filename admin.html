@@ -110,8 +110,6 @@
   .two > * { min-width: 0; }
   .link-box { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
   .link-box code { flex: 1; min-width: 0; direction: ltr; text-align: left; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-  .reg-qr { display: flex; gap: 16px; align-items: center; margin-top: 12px; }
-  .reg-qr canvas { width: 132px; height: 132px; border: 1px solid var(--line); border-radius: 10px; flex: none; }
   .exit-box { border-radius: 14px; padding: 16px; margin-top: 14px; background: #ECE4D0; }
   .exit-box.open { background: var(--gold); }
   table { width: 100%; border-collapse: collapse; font-size: 15px; }
@@ -250,17 +248,11 @@
     <div class="two">
       <div class="card">
         <h3>קישור הרשמה לשוטרים</h3>
-        <p class="muted small" style="margin:0">שלח את הקישור לשוטרים. רק מספרים אישיים מרשימת המאושרים יוכלו להירשם.</p>
+        <p class="muted small" style="margin:0">העתק את הקישור ושלח אותו לשוטרים. רק מספרים אישיים מרשימת המאושרים יוכלו להירשם.</p>
         <div class="link-box"><code id="regLink"></code><button class="btn sm ghost" id="copyReg" type="button">העתקה</button></div>
-        <div class="reg-qr">
-          <canvas id="regQr"></canvas>
-          <div>
-            <p class="small muted" style="margin:0 0 8px">אפשר גם להקרין את הקוד הזה לסריקה בתדריך.</p>
-            <div class="btn-row" style="margin:0">
-              <button class="btn sm" id="toggleReg" type="button"></button>
-              <button class="btn sm ghost" id="rotateReg" type="button">החלפת קישור</button>
-            </div>
-          </div>
+        <div class="btn-row">
+          <button class="btn sm" id="toggleReg" type="button"></button>
+          <button class="btn sm ghost" id="rotateReg" type="button">החלפת קישור</button>
         </div>
       </div>
       <div class="card">
@@ -428,7 +420,6 @@
 
 <script src="config.js"></script>
 <script src="app.js"></script>
-<script src="vendor/qrcode.js"></script>
 <script>
 (function () {
   'use strict';
@@ -692,7 +683,6 @@
     });
   }
 
-  var drawnRegUrl = '';
   function renderDetail() {
     var ev = detail.event;
     var c = detail.counts;
@@ -719,10 +709,6 @@
 
     var ru = regUrl(ev);
     $('regLink').textContent = ru;
-    if (ru !== drawnRegUrl) {
-      drawnRegUrl = ru;
-      NV.drawQr($('regQr'), ru, { size: 132, quiet: 2 });
-    }
     $('toggleReg').textContent = ev.regOpen ? 'סגירת ההרשמה' : 'פתיחת ההרשמה';
     $('toggleReg').className = 'btn sm' + (ev.regOpen ? ' ghost' : ' ok');
     $('dispLink').textContent = dispUrl(ev);
