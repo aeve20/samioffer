@@ -206,7 +206,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var NEED_SERVER = 10902;
+  var NEED_SERVER = 10903;
   var session = '';
   try { session = sessionStorage.getItem('nv_stress') || ''; } catch (e) { }
 
@@ -263,7 +263,7 @@
     $('verTag').textContent = 'שרת ' + v;
     var q = String(v || '0').split('.');
     var num = (parseInt(q[0], 10) || 0) * 10000 + (parseInt(q[1], 10) || 0) * 100 + (parseInt(q[2], 10) || 0);
-    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9.2 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
+    if (!v || num < NEED_SERVER) notice('runNotice', 'bad', 'השרת בגרסה ' + (v || 'ישנה') + '. כלי הבדיקה דורש גרסה 1.9.3 ומעלה. יש לפרסם גרסה חדשה של הקוד בשרת.');
   }
   $('loginBtn').addEventListener('click', function () {
     var pw = $('password').value;
